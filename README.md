@@ -1,26 +1,39 @@
 # ember-visual-test
 
-This README outlines the details of collaborating on this Ember addon.
+Test screens in acceptance tests for visual changes over time.
 
 ## Installation
 
-* `git clone <repository-url>` this repository
-* `cd ember-visual-test`
-* `npm install`
+* `ember install ember-visual-test`
 
-## Running
+## Usage
 
-* `ember serve`
-* Visit your app at [http://localhost:4200](http://localhost:4200).
+Use ember-visual-test in your acceptance tests like this:
 
-## Running Tests
+```js
+import { test } from 'qunit';
+import moduleForAcceptance from '../../tests/helpers/module-for-acceptance';
+import { capture } from 'ember-visual-test/test-support/helpers';
 
-* `npm test` (Runs `ember try:each` to test your addon against multiple Ember versions)
-* `ember test`
-* `ember test --server`
+moduleForAcceptance('Acceptance | visual test');
 
-## Building
+test('visiting /', async function(assert) {
+  let testBody = document.querySelector('#ember-testing');
 
-* `ember build`
+  await visit('/');
 
-For more information on using ember-cli, visit [https://ember-cli.com/](https://ember-cli.com/).
+  assert.equal(currentURL(), '/');
+
+  await capture(assert, testBody, 'test-file-name');
+});
+```
+
+### capture
+ 
+The capture function takes three parameters: `capture(assert, element, identifier)`
+
+* `assert`: The assert function. If this is null, no assert will be made, 
+and instead an object with data about the success/error of the test will be returned 
+(don't forget to `await` on it!).
+* `element`: Either a DOM node, or a string which will be used in `document.querSelector()`
+* `identifier`: A unique string to identify this capture. This will be the file name of the generated images, and has to be unique across your whole application.
