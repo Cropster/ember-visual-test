@@ -36,6 +36,20 @@ Now, whenever the test is run, a new snapshot is made and put in the `/visual-te
 
 Note that this means that if a screen changes consciously, you'll need to either manually delete that image from the `/visual-test-output` folder, or run `ember visual-test:reset` to reset ALL images.
 
+### Example
+
+For example, imagine you had an image like this the first time you ran the capture:
+
+![Original Image](docs/images/example-base-image.png)
+
+Now, after some changes, you run the tests again, and this time, it captures this image:
+
+![Changed Image](docs/images/example-comparison-image.png)
+
+This would result in an error, and generate the following diff image:
+
+![Diff Image](docs/images/example-diff-image.png)
+
 ## API docs
 
 ### capture
@@ -54,3 +68,9 @@ There are also two CLI commands to use:
 
 * `ember visual-test:clean`: Clean the diff/tmp folders
 * `ember visual-test:reset`: Manually clean all folders & create new baseline images
+
+## FAQ / Issues
+
+Note that there might be issues if the tests are run in different browsers/browser sizes. Ideally, they are always run in CLI to ensure stable results.
+
+Also note that html2canvas has some quirks, and not everything might be perfect. But usually, results should still remain the same in multiple runs.

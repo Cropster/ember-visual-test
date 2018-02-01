@@ -32,7 +32,11 @@ export async function capture(assert, element, fileName) {
 
   let response = await $.post('/visual-test/image', data, 'application/json');
   if (assert) {
-    assert.ok(response.status === 'SUCCESS', response.error);
+    if (response.status === 'SUCCESS') {
+      assert.ok(true, `visual-test: ${fileName} has not changed`);
+    } else {
+      assert.ok(false, `visual-test: ${fileName} has changed: ${response.error}`);
+    }
   }
 
   return response;
