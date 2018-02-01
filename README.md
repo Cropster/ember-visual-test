@@ -28,6 +28,16 @@ test('visiting /', async function(assert) {
 });
 ```
 
+## How does it work?
+
+Whenever `capture` is called in the test, it will make a screenshot of the given element with [html2canvas](http://html2canvas.hertzen.com/), and save it in the `/visual-test-output` folder. Please commit this folder into source control!
+
+Now, whenever the test is run, a new snapshot is made and put in the `/visual-test-output/tmp` folder (do NOT put that into source control!). It then compares the two images with [pixelmatch](https://github.com/mapbox/pixelmatch) and asserts accordingly. If a mismatch is found, it will save an image with the diff of the two versions in the `/visual-test-output/diff` folder, to help you identify the issue.
+
+Note that this means that if a screen changes consciously, you'll need to either manually delete that image from the `/visual-test-output` folder, or run `ember visual-test:reset` to reset ALL images.
+
+## API docs
+
 ### capture
  
 The capture function takes three parameters: `capture(assert, element, identifier)`
@@ -37,3 +47,10 @@ and instead an object with data about the success/error of the test will be retu
 (don't forget to `await` on it!).
 * `element`: Either a DOM node, or a string which will be used in `document.querSelector()`
 * `identifier`: A unique string to identify this capture. This will be the file name of the generated images, and has to be unique across your whole application.
+
+### CLI
+
+There are also two CLI commands to use: 
+
+* `ember visual-test:clean`: Clean the diff/tmp folders
+* `ember visual-test:reset`: Manually clean all folders & create new baseline images
