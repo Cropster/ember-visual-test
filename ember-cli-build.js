@@ -7,6 +7,10 @@ module.exports = function(defaults) {
   let app = new EmberAddon(defaults, {
     'ember-cli-babel': {
       includePolyfill: true
+    },
+
+    visualTest: {
+      imageLogging: true
     }
   });
 

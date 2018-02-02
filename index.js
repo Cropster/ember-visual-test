@@ -3,135 +3,160 @@
 
 const commands = require('./lib/commands');
 const path = require('path');
-const Funnel = require('broccoli-funnel');
-const MergeTrees = require('broccoli-merge-trees');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const PNG = require('pngjs').PNG;
 const pixelmatch = require('pixelmatch');
 const RSVP = require('rsvp');
-
-function saveImage(imgDataUrl, fileName, options) {
-  imgDataUrl = imgDataUrl.replace(/^data:image\/\w+;base64,/, '');
-  let buff = new Buffer(imgDataUrl, 'base64');
-
-  if (!fileName.includes('.png')) {
-    fileName = `${fileName}.png`;
-  }
-
-  let fullPath = path.join(options.imageDirectory, '/', fileName);
-
-  // only if the file does not exist, or if we force to save, do we write the actual images themselves
-  if (options.forceBuildVisualTestImages || !fs.existsSync(fullPath)) {
-    fs.writeFileSync(fullPath, buff);
-  }
-
-  // Always write the tmp ones
-  let tmpPath = path.join(options.imageTmpDirectory, '/', fileName);
-  fs.writeFileSync(tmpPath, buff);
-
-  return fullPath;
-}
-
-function compareImages(fileName, options) {
-  if (!fileName.includes('.png')) {
-    fileName = `${fileName}.png`;
-  }
-
-  let img1Path = path.join(options.imageDirectory, '/', fileName);
-  let img2Path = path.join(options.imageTmpDirectory, '/', fileName);
-
-  return new RSVP.Promise(function(resolve, reject) {
-    let img1 = fs.createReadStream(img1Path).pipe(new PNG()).on('parsed', doneReading);
-    let img2 = fs.createReadStream(img2Path).pipe(new PNG()).on('parsed', doneReading);
-    let filesRead = 0;
-
-    function doneReading() {
-      if (++filesRead < 2) {
-        return;
-      }
-      let diff = new PNG({ width: img1.width, height: img1.height });
-
-      let errorPixelCount = pixelmatch(img1.data, img2.data, diff.data, img1.width, img1.height, {
-        threshold: options.imageMatchThreshold,
-        includeAA: true
-      });
-
-      if (errorPixelCount <= options.imageMatchAllowedFailures) {
-        return resolve();
-      }
-
-      let fullOutputPath = path.join(options.imageDiffDirectory, '/', fileName);
-      diff.pack().pipe(fs.createWriteStream(fullOutputPath));
-
-      reject({
-        errorPixelCount,
-        allowedErrorPixelCount: options.imageMatchAllowedFailures,
-        diffPath: fullOutputPath
-      });
-    }
-  });
-
-}
+const HeadlessChrome = require('simple-headless-chrome');
 
 module.exports = {
   name: 'ember-visual-test',
 
-  imageDirectory: 'visual-test-output',
-  imageDiffDirectory: 'visual-test-output/diff',
-  imageTmpDirectory: 'visual-test-output/tmp',
-  forceBuildVisualTestImages: false,
-  imageMatchAllowedFailures: 0,
-  imageMatchThreshold: 0.75,
+  // The base settings
+  // This can be overwritten
+  visualTest: {
+    imageDirectory: 'visual-test-output',
+    imageDiffDirectory: 'visual-test-output/diff',
+    imageTmpDirectory: 'visual-test-output/tmp',
+    forceBuildVisualTestImages: false,
+    imageMatchAllowedFailures: 0,
+    imageMatchThreshold: 0.1,
+    imageLogging: false,
+  },
 
   included(app) {
     this._super.included(app);
     this._ensureThisImport();
 
-    let options = app.options.visualTest || {};
+    let options = Object.assign({}, this.visualTest);
+    let newOptions = app.options.visualTest || {};
 
-    if (options.imageDirectory) {
-      this.imageDirectory = options.imageDirectory;
+    if (newOptions.imageDirectory) {
+      options.imageDirectory = newOptions.imageDirectory;
     }
-    if (options.imageDiffDirectory) {
-      this.imageDiffDirectory = options.imageDiffDirectory;
+    if (newOptions.imageDiffDirectory) {
+      options.imageDiffDirectory = newOptions.imageDiffDirectory;
     }
-    if (options.imageTmpDirectory) {
-      this.imageTmpDirectory = options.imageTmpDirectory;
+    if (newOptions.imageTmpDirectory) {
+      options.imageTmpDirectory = newOptions.imageTmpDirectory;
     }
-    if (options.imageMatchAllowedFailures) {
-      this.imageMatchAllowedFailures = options.imageMatchAllowedFailures;
+    if (newOptions.imageMatchAllowedFailures) {
+      options.imageMatchAllowedFailures = newOptions.imageMatchAllowedFailures;
     }
-    if (options.imageMatchThreshold) {
-      this.imageMatchThreshold = options.imageMatchThreshold;
+    if (newOptions.imageMatchThreshold) {
+      options.imageMatchThreshold = newOptions.imageMatchThreshold;
+    }
+    if (newOptions.imageLogging) {
+      options.imageLogging = newOptions.imageLogging;
     }
 
-    this.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
+    options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
+    this.visualTest = options;
 
-    this.import('vendor/html2canvas/html2canvas.js', {
+    this._launchBrowser();
+
+    this.import('vendor/visual-test.css', {
       type: 'test'
     });
   },
 
-  treeForVendor(vendorTree) {
-    let trees = [];
-    if (vendorTree) {
-      trees.push(vendorTree);
+  _launchBrowser: async function() {
+    let options = this.visualTest;
+
+    if (options.browser) {
+      return;
     }
-
-    let html2canvasPath = path.join(path.dirname(require.resolve('html2canvas')), '..');
-
-    let html2CanvasTree = new Funnel(html2canvasPath, {
-      include: ['html2canvas.js'],
-      destDir: 'html2canvas'
+    const browser = new HeadlessChrome({
+      headless: true,
+      chrome: {}
     });
+    options.browser = browser;
 
-    trees.push(html2CanvasTree);
-
-    return new MergeTrees(trees, { overwrite: true });
+    // This is started while the app is building, so we can assume this will be ready
+    await browser.init();
   },
 
-  middleware(app, options) {
+  _imageLog(str) {
+    if (this.visualTest.imageLogging) {
+      console.log(str);
+    }
+  },
+
+  _makeScreenshots: async function(url, fileName, { selector, fullPage }) {
+    let options = this.visualTest;
+    let browser = options.browser;
+
+    let tab = await browser.newTab({ privateTab: false });
+    await tab.goTo(url);
+    // This is inserted into the DOM by the capture helper when everything is ready
+    await tab.waitForSelectorToLoad('#visual-test-has-loaded', { interval: 100 });
+
+    let fullPath = path.join(options.imageDirectory, fileName);
+
+    let screenshotOptions = { selector, fullPage };
+
+    // To avoid problems...
+    await tab.wait(100);
+
+    // only if the file does not exist, or if we force to save, do we write the actual images themselves
+    if (options.forceBuildVisualTestImages || !fs.existsSync(`${fullPath}.png`)) {
+      this._imageLog(`Making base screenshot ${fileName}`);
+      await tab.saveScreenshot(fullPath, screenshotOptions);
+    }
+
+    // Always make the tmp screenshot
+    let fullTmpPath = path.join(options.imageTmpDirectory, fileName);
+    this._imageLog(`Making comparison screenshot ${fileName}`);
+    await tab.saveScreenshot(fullTmpPath, screenshotOptions);
+
+    await tab.close();
+    return true;
+  },
+
+  _compareImages(fileName) {
+    let options = this.visualTest;
+
+    if (!fileName.includes('.png')) {
+      fileName = `${fileName}.png`;
+    }
+
+    let img1Path = path.join(options.imageDirectory, '/', fileName);
+    let img2Path = path.join(options.imageTmpDirectory, '/', fileName);
+
+    return new RSVP.Promise(function(resolve, reject) {
+      let img1 = fs.createReadStream(img1Path).pipe(new PNG()).on('parsed', doneReading);
+      let img2 = fs.createReadStream(img2Path).pipe(new PNG()).on('parsed', doneReading);
+      let filesRead = 0;
+
+      function doneReading() {
+        if (++filesRead < 2) {
+          return;
+        }
+        let diff = new PNG({ width: img1.width, height: img1.height });
+
+        let errorPixelCount = pixelmatch(img1.data, img2.data, diff.data, img1.width, img1.height, {
+          threshold: options.imageMatchThreshold,
+          includeAA: true
+        });
+
+        if (errorPixelCount <= options.imageMatchAllowedFailures) {
+          return resolve();
+        }
+
+        let fullOutputPath = path.join(options.imageDiffDirectory, '/', fileName);
+        diff.pack().pipe(fs.createWriteStream(fullOutputPath));
+
+        reject({
+          errorPixelCount,
+          allowedErrorPixelCount: options.imageMatchAllowedFailures,
+          diffPath: fullOutputPath
+        });
+      }
+    });
+  },
+
+  middleware(app) {
     app.use(bodyParser.urlencoded({
       limit: '50mb',
       extended: true,
@@ -141,51 +166,45 @@ module.exports = {
       limit: '50mb'
     }));
 
-    app.post('/visual-test/image', function(req, res) {
-      let imageDataUrl = req.body.image;
+    app.post('/visual-test/make-screenshot', (req, res) => {
+      let url = req.body.url;
       let fileName = req.body.name;
+      let selector = req.body.selector;
+      let fullPage = req.body.fullPage || false;
 
-      saveImage(imageDataUrl, fileName, options);
+      if (fullPage === 'true') {
+        fullPage = true;
+      }
+      if (fullPage === 'false') {
+        fullPage = false;
+      }
 
-      compareImages(fileName, options).then(() => {
+      this._makeScreenshots(url, fileName, { selector, fullPage }).then(() => {
+        return this._compareImages(fileName);
+      }).then(() => {
         res.send({ status: 'SUCCESS' });
-      }).catch(({ diffPath, errorPixelCount, }) => {
-        res.send({
+      }).catch((reason) => {
+        let diffPath = reason ? reason.diffPath : null;
+        let errorPixelCount = reason ? reason.errorPixelCount : null;
+
+        let error = {
           status: 'ERROR',
           diffPath,
           fullDiffPath: path.join(__dirname, diffPath),
           error: `${errorPixelCount} pixels differ - see ${diffPath}`
-        });
+        };
+        res.send(error);
       });
     });
-
   },
 
   testemMiddleware: function(app) {
-    this.middleware(app, {
-      root: this.project.root,
-      imageDirectory: this.imageDirectory,
-      imageDiffDirectory: this.imageDiffDirectory,
-      imageTmpDirectory: this.imageTmpDirectory,
-      forceBuildVisualTestImages: this.forceBuildVisualTestImages,
-      targetBrowsers: this.targetBrowsers,
-      imageMatchAllowedFailures: this.imageMatchAllowedFailures,
-      imageMatchThreshold: this.imageMatchThreshold
-    });
+    this.middleware(app);
   },
 
   serverMiddleware: function(options) {
     this.app = options.app;
-    this.middleware(options.app, {
-      root: this.project.root,
-      imageDirectory: this.imageDirectory.replace(/\/$/, ''),
-      imageDiffDirectory: this.imageDiffDirectory.replace(/\/$/, ''),
-      imageTmpDirectory: this.imageTmpDirectory.replace(/\/$/, ''),
-      forceBuildVisualTestImages: this.forceBuildVisualTestImages,
-      targetBrowsers: this.targetBrowsers,
-      imageMatchAllowedFailures: this.imageMatchAllowedFailures,
-      imageMatchThreshold: this.imageMatchThreshold
-    });
+    this.middleware(options.app);
   },
 
   includedCommands: function() {

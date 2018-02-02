@@ -1,0 +1,36 @@
+.visual-test-capture-mode {
+  padding: 0;
+  margin: 0;
+}
+
+.visual-test-capture-mode #qunit,
+.visual-test-capture-mode #qunit-fixture {
+  display: none;
+}
+
+.visual-test-capture-mode #ember-testing-container {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  top: 0;
+  left: 0;
+  right: auto;
+  bottom: auto;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.visual-test-capture-mode #ember-testing {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  border: 0;
+  margin: 0;
+  transform: scale(1);
+  padding: 0;
+}
+
+.visual-test-capture-mode [data-test-visual-ignore] {
+  opacity: 0;
+}

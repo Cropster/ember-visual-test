@@ -21,8 +21,8 @@
     "broccoli-funnel": "^2.0.1",
     "broccoli-merge-trees": "^2.0.0",
     "ember-cli-babel": "^6.3.0",
-    "html2canvas": "^1.0.0-alpha.9",
-    "pixelmatch": "^4.0.2"
+    "pixelmatch": "^4.0.2",
+    "simple-headless-chrome": "^4.3.10"
   },
   "devDependencies": {
     "broccoli-asset-rev": "^2.4.5",

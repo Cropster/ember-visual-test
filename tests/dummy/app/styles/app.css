@@ -6,9 +6,12 @@ body {
 
 .text {
   max-width: 500px;
-  margin: 0 auto;
 }
 
 .text--alternate {
   font-size: 1.1em;
+}
+
+h1 {
+  margin-top: 0;
 }
