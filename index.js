@@ -8,6 +8,7 @@ const PNG = require('pngjs').PNG;
 const pixelmatch = require('pixelmatch');
 const RSVP = require('rsvp');
 const HeadlessChrome = require('simple-headless-chrome');
+const request = require('request');
 
 module.exports = {
   name: 'ember-visual-test',
@@ -22,7 +23,8 @@ module.exports = {
     imageMatchAllowedFailures: 0,
     imageMatchThreshold: 0.1,
     imageLogging: false,
-    debugLogging: false
+    debugLogging: false,
+    imgurClientId: null,
   },
 
   included(app) {
@@ -52,6 +54,9 @@ module.exports = {
     }
     if (newOptions.debugLogging) {
       options.debugLogging = newOptions.debugLogging;
+    }
+    if (newOptions.imgurClientId) {
+      options.imgurClientId = newOptions.imgurClientId;
     }
 
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
@@ -139,17 +144,18 @@ module.exports = {
 
   _compareImages(fileName) {
     let options = this.visualTest;
+    let _this = this;
 
     if (!fileName.includes('.png')) {
       fileName = `${fileName}.png`;
     }
 
-    let img1Path = path.join(options.imageDirectory, '/', fileName);
-    let img2Path = path.join(options.imageTmpDirectory, '/', fileName);
+    let baselineImgPath = path.join(options.imageDirectory, '/', fileName);
+    let imgPath = path.join(options.imageTmpDirectory, '/', fileName);
 
     return new RSVP.Promise(function(resolve, reject) {
-      let img1 = fs.createReadStream(img1Path).pipe(new PNG()).on('parsed', doneReading);
-      let img2 = fs.createReadStream(img2Path).pipe(new PNG()).on('parsed', doneReading);
+      let img1 = fs.createReadStream(baselineImgPath).pipe(new PNG()).on('parsed', doneReading);
+      let img2 = fs.createReadStream(imgPath).pipe(new PNG()).on('parsed', doneReading);
       let filesRead = 0;
 
       function doneReading() {
@@ -167,15 +173,65 @@ module.exports = {
           return resolve();
         }
 
-        let fullOutputPath = path.join(options.imageDiffDirectory, '/', fileName);
-        diff.pack().pipe(fs.createWriteStream(fullOutputPath));
+        let diffPath = path.join(options.imageDiffDirectory, '/', fileName);
+        diff.pack().pipe(fs.createWriteStream(diffPath)).on('close', () => {
+          RSVP.all([
+            _this._tryUploadToImgur(imgPath),
+            _this._tryUploadToImgur(diffPath)
+          ]).then(([urlTmp, urlDiff]) => {
+            reject({
+              errorPixelCount,
+              allowedErrorPixelCount: options.imageMatchAllowedFailures,
+              diffPath: urlDiff || diffPath,
+              tmpPath: urlTmp || imgPath
+            });
+          }).catch(reject);
 
-        reject({
-          errorPixelCount,
-          allowedErrorPixelCount: options.imageMatchAllowedFailures,
-          diffPath: fullOutputPath
         });
       }
+    });
+  },
+
+  _tryUploadToImgur: async function(imagePath) {
+    let imgurClientID = this.visualTest.imgurClientId;
+
+    if (!imgurClientID) {
+      return RSVP.resolve(null);
+    }
+
+    let fileBase64 = await new RSVP.Promise((resolve, reject) => {
+      fs.readFile(imagePath, { encoding: 'base64' }, function(err, data) {
+        if (err) {
+          return reject(err);
+        }
+        resolve(data);
+      });
+    });
+
+    return await new RSVP.Promise((resolve, reject) => {
+      let data = {
+        type: 'base64',
+        image: fileBase64
+      };
+
+      request.post(
+        'https://api.imgur.com/3/image',
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Client-ID ' + imgurClientID
+          },
+          json: data
+        },
+        (error, response, body) => {
+          if (!error && response.statusCode === 200) {
+            resolve(body.data.link);
+          } else {
+            console.error(body);
+            reject(body);
+          }
+        }
+      );
     });
   },
 
@@ -208,13 +264,14 @@ module.exports = {
         res.send({ status: 'SUCCESS' });
       }).catch((reason) => {
         let diffPath = reason ? reason.diffPath : null;
+        let tmpPath = reason ? reason.tmpPath : null;
         let errorPixelCount = reason ? reason.errorPixelCount : null;
 
         let error = {
           status: 'ERROR',
           diffPath,
           fullDiffPath: path.join(__dirname, diffPath),
-          error: `${errorPixelCount} pixels differ - see ${diffPath}`
+          error: `${errorPixelCount} pixels differ - diff: ${diffPath}, img: ${tmpPath}`
         };
         res.send(error);
       });

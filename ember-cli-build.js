@@ -10,7 +10,8 @@ module.exports = function(defaults) {
 
     visualTest: {
       imageLogging: true,
-      debugLogging: true
+      debugLogging: true,
+      imgurClientId: '6331cc0a93af83c'
     }
   });
 
