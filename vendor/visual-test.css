@@ -1,6 +1,7 @@
 .visual-test-capture-mode {
   padding: 0;
   margin: 0;
+  width: 1024px;
 }
 
 .visual-test-capture-mode #qunit,
@@ -22,7 +23,7 @@
 }
 
 .visual-test-capture-mode #ember-testing {
-  width: 1024px;
+  width: 100%;
   height: 100%;
   overflow: visible;
   border: 0;
