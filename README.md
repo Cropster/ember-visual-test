@@ -1,6 +1,6 @@
 # ember-visual-test
 
-Test screens in acceptance tests for visual changes over time.
+Test screens in acceptance/integration tests for visual changes over time.
 
 ## Installation
 
@@ -61,9 +61,7 @@ This would result in an error, and generate the following diff image:
  
 The capture function takes three parameters: `capture(assert, identifier, options)`
 
-* `assert`: The assert function. If this is null, no assert will be made, 
-and instead an object with data about the success/error of the test will be returned 
-(don't forget to `await` on it!).
+* `assert`: The assert function. This assumes you are using qunit.
 * `identifier`: A unique string to identify this capture. This will be the file name of the generated images, and has to be unique across your whole application.
 * `options`: An optional object with options. The following options are allowed:
   * `selector`: An optional selector to screenshot. If not specified, the whole page will be captured.
