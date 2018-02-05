@@ -22,6 +22,7 @@ module.exports = {
     imageMatchAllowedFailures: 0,
     imageMatchThreshold: 0.1,
     imageLogging: false,
+    debugLogging: false
   },
 
   included(app) {
@@ -48,6 +49,9 @@ module.exports = {
     }
     if (newOptions.imageLogging) {
       options.imageLogging = newOptions.imageLogging;
+    }
+    if (newOptions.debugLogging) {
+      options.debugLogging = newOptions.debugLogging;
     }
 
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
@@ -88,12 +92,25 @@ module.exports = {
     }
   },
 
+  _debugLog(str) {
+    if (this.visualTest.debugLogging) {
+      console.log(str);
+    }
+  },
+
   _makeScreenshots: async function(url, fileName, { selector, fullPage }) {
     let options = this.visualTest;
     let browser = await this._launchBrowser();
 
     let tab = await browser.newTab({ privateTab: false });
+
     await tab.goTo(url);
+
+    tab.onConsole((options) => {
+      let logValue = options.map((item) => item.value).join(' ');
+      this._debugLog(`Browser log: ${logValue}`);
+    });
+
     // This is inserted into the DOM by the capture helper when everything is ready
     await tab.waitForSelectorToLoad('#visual-test-has-loaded', { interval: 100 });
 
