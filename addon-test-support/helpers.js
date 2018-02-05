@@ -37,6 +37,11 @@ export function prepareCaptureMode() {
     div.setAttribute('id', 'visual-test-has-loaded');
     document.body.appendChild(div);
   }
+
+  /* eslint-disable no-console */
+  console.log('body width', document.body.offsetWidth);
+  console.log('window width', window.innerWidth);
+  /* eslint-enable no-console */
 }
 
 export async function requestCapture(url, fileName, { selector, fullPage }) {

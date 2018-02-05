@@ -9,7 +9,8 @@ module.exports = function(defaults) {
     },
 
     visualTest: {
-      imageLogging: true
+      imageLogging: true,
+      debugLogging: true
     }
   });
 
