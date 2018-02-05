@@ -9,6 +9,7 @@ const pixelmatch = require('pixelmatch');
 const RSVP = require('rsvp');
 const HeadlessChrome = require('simple-headless-chrome');
 const request = require('request');
+const os = require('os');
 
 module.exports = {
   name: 'ember-visual-test',
@@ -16,15 +17,16 @@ module.exports = {
   // The base settings
   // This can be overwritten
   visualTest: {
-    imageDirectory: 'visual-test-output',
+    imageDirectory: 'visual-test-output/baseline',
     imageDiffDirectory: 'visual-test-output/diff',
     imageTmpDirectory: 'visual-test-output/tmp',
     forceBuildVisualTestImages: false,
     imageMatchAllowedFailures: 0,
-    imageMatchThreshold: 0.1,
+    imageMatchThreshold: 0.3,
     imageLogging: false,
     debugLogging: false,
     imgurClientId: null,
+    groupByOs: true
   },
 
   included(app) {
@@ -58,11 +60,23 @@ module.exports = {
     if (newOptions.imgurClientId) {
       options.imgurClientId = newOptions.imgurClientId;
     }
+    if (newOptions.groupByOs) {
+      options.groupByOs = newOptions.groupByOs;
+    }
 
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
     this.visualTest = options;
 
-    this._launchBrowser();
+    let osType = os.type().toLowerCase();
+    switch (osType) {
+      case 'windows_nt':
+        osType = 'win';
+        break;
+      case 'darwin':
+        osType = 'mac';
+        break;
+    }
+    options.os = osType;
 
     this.import('vendor/visual-test.css', {
       type: 'test'
@@ -127,9 +141,16 @@ module.exports = {
     await tab.wait(100);
 
     // only if the file does not exist, or if we force to save, do we write the actual images themselves
-    if (options.forceBuildVisualTestImages || !fs.existsSync(`${fullPath}.png`)) {
+    let newScreenshotUrl = null;
+    let newBaseline = options.forceBuildVisualTestImages || !fs.existsSync(`${fullPath}.png`);
+    if (newBaseline) {
       this._imageLog(`Making base screenshot ${fileName}`);
       await tab.saveScreenshot(fullPath, screenshotOptions);
+
+      newScreenshotUrl = await this._tryUploadToImgur(`${fullPath}.png`);
+      if (newScreenshotUrl) {
+        this._imageLog(`New screenshot can be found under ${newScreenshotUrl}`);
+      }
     }
 
     // Always make the tmp screenshot
@@ -139,7 +160,7 @@ module.exports = {
 
     await tab.close();
     await browser.close();
-    return true;
+    return { newBaseline, newScreenshotUrl };
   },
 
   _compareImages(fileName) {
@@ -247,7 +268,7 @@ module.exports = {
 
     app.post('/visual-test/make-screenshot', (req, res) => {
       let url = req.body.url;
-      let fileName = req.body.name;
+      let fileName = this._getFileName(req.body.name);
       let selector = req.body.selector;
       let fullPage = req.body.fullPage || false;
 
@@ -258,22 +279,25 @@ module.exports = {
         fullPage = false;
       }
 
-      this._makeScreenshots(url, fileName, { selector, fullPage }).then(() => {
+      let data = {};
+      this._makeScreenshots(url, fileName, { selector, fullPage }).then(({ newBaseline, newScreenshotUrl }) => {
+        data.newScreenshotUrl = newScreenshotUrl;
+        data.newBaseline = newBaseline;
         return this._compareImages(fileName);
       }).then(() => {
-        res.send({ status: 'SUCCESS' });
+        data.status = 'SUCCESS';
+        res.send(data);
       }).catch((reason) => {
         let diffPath = reason ? reason.diffPath : null;
         let tmpPath = reason ? reason.tmpPath : null;
         let errorPixelCount = reason ? reason.errorPixelCount : null;
 
-        let error = {
-          status: 'ERROR',
-          diffPath,
-          fullDiffPath: path.join(__dirname, diffPath),
-          error: `${errorPixelCount} pixels differ - diff: ${diffPath}, img: ${tmpPath}`
-        };
-        res.send(error);
+        data.status = 'ERROR';
+        data.diffPath = diffPath;
+        data.fullDiffPath = path.join(__dirname, diffPath);
+        data.error = `${errorPixelCount} pixels differ - diff: ${diffPath}, img: ${tmpPath}`;
+
+        res.send(data);
       });
     });
   },
@@ -306,6 +330,15 @@ module.exports = {
         app.import(asset, options);
       };
     }
+  },
+
+  _getFileName(fileName) {
+    let options = this.visualTest;
+    if (options.groupByOs) {
+      let os = options.os;
+      return `${os}-${fileName}`;
+    }
+    return fileName;
   },
 
   isDevelopingAddon() {

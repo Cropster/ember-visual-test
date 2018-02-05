@@ -29,6 +29,9 @@
   margin: 0;
   transform: scale(1);
   padding: 0;
+  -webkit-font-smoothing: none !important;
+  text-rendering: geometricPrecision !important;
+  font-kerning: none !important;
 }
 
 .visual-test-capture-mode [data-test-visual-ignore] {

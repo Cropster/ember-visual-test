@@ -30,7 +30,7 @@ test('visiting /', async function(assert) {
 
 Whenever `capture` is called in the test, the node server will make a screenshot with 
 [simple-headless-chrome](https://github.com/LucianoGanga/simple-headless-chrome), 
-and save it in the `/visual-test-output` folder. Please commit this folder into source control!
+and save it in the `/visual-test-output/baseline` folder. Please commit this folder into source control!
 
 Now, whenever the test is run, a new snapshot is made and put in the `/visual-test-output/tmp` folder 
 (do NOT put that into source control!). It then compares the two images with 
@@ -38,7 +38,7 @@ Now, whenever the test is run, a new snapshot is made and put in the `/visual-te
 If a mismatch is found, it will save an image with the diff of the two versions in the `/visual-test-output/diff` folder, to help you identify the issue.
 
 Note that this means that if a screen changes consciously, you'll need to either manually 
-delete that image from the `/visual-test-output` folder, 
+delete that image from the `/visual-test-output/baseline` folder, 
 or run `ember visual-test:reset` to reset ALL images.
 
 ### Example
@@ -55,6 +55,22 @@ This would result in an error, and generate the following diff image:
 
 ![Diff Image](docs/images/example-diff-image.png)
 
+### Note on different platforms / CI
+
+Sadly, the font rendering is slightly different on different platforms (Windows/Linux/MaxOS). 
+This can lead to comparison errors when comparing a baseline image generated on one platform, with one on another platform.
+This is especially problematic on CI (e.g. Travis or CircleCI), if your local machine doesn't run on Linux.
+
+To prevent wrong errors to pop up there, this addon will by default namespace the images with the OS, 
+and thus generate a different set of baseline (and comparison) images for windows/linux/mac. 
+Of course, this also means that if you generate baseline images on your PC, and then run tests on Linux, 
+it will not actually compare the images, and will always succeed. 
+However, this is still preferable to tests always failing. 
+You can also put multiple different baseline images into Git, to let the test compare to the fitting one.
+
+For information on how to turn on the by-OS comparison, see the settings section below.
+
+
 ## API docs
 
 ### capture
@@ -68,6 +84,32 @@ The capture function takes three parameters: `capture(assert, identifier, option
   * `fullPage`: If a full page screenshot should be made, or just the browsers viewport. Defaults to `true`.
   
 This works in both acceptance tests as well as in integration tests.
+
+
+### Build configuration
+
+There are a few configuration options for you `ember-cli-build.js`, with the default values:
+
+```js
+let app = new EmberAddon(defaults, {
+  visualTest: {
+   imageMatchAllowedFailures: 0, // How many failed pixels result in an error
+   imageMatchThreshold: 0.3, //  This is a config option for pixelmatch
+   imageLogging: false, // If generated images should be logged to the console
+   debugLogging: false, // If console messages from headless chrome should be printed in the console
+   imgurClientId: null, // If set to a client ID of imgur, images will be uploaded there as well, to debug images e.g. on CI
+   groupByOs: true // If one set of images should be created/compared by OS
+  }
+});
+```
+
+Also note that for the capture helper to work, you'll need to include the babel polyfill, at least in the test environment:
+
+```js
+'ember-cli-babel': {
+  includePolyfill: true
+}
+```
 
 ### CLI
 
