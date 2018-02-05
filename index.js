@@ -61,12 +61,6 @@ module.exports = {
   },
 
   _launchBrowser: async function() {
-    let options = this.visualTest;
-
-    if (options.browser) {
-      return;
-    }
-
     let flags = [
       '--window-size=1440,900',
       '--disable-gpu',
@@ -82,10 +76,10 @@ module.exports = {
         flags
       }
     });
-    options.browser = browser;
 
     // This is started while the app is building, so we can assume this will be ready
     await browser.init();
+    return browser;
   },
 
   _imageLog(str) {
@@ -96,7 +90,7 @@ module.exports = {
 
   _makeScreenshots: async function(url, fileName, { selector, fullPage }) {
     let options = this.visualTest;
-    let browser = options.browser;
+    let browser = await this._launchBrowser();
 
     let tab = await browser.newTab({ privateTab: false });
     await tab.goTo(url);
@@ -122,6 +116,7 @@ module.exports = {
     await tab.saveScreenshot(fullTmpPath, screenshotOptions);
 
     await tab.close();
+    await browser.close();
     return true;
   },
 
