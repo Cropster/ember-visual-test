@@ -66,9 +66,21 @@ module.exports = {
     if (options.browser) {
       return;
     }
+
+    let flags = [
+      '--window-size=1440,900',
+      '--disable-gpu',
+    ];
+
+    if (process.env.TRAVIS) {
+      flags.push('--no-sandbox');
+    }
+
     const browser = new HeadlessChrome({
       headless: true,
-      chrome: {}
+      chrome: {
+        flags
+      }
     });
     options.browser = browser;
 
