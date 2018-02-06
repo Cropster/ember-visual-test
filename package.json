@@ -6,12 +6,12 @@
     "ember-addon"
   ],
   "license": "MIT",
-  "author": "",
+  "author": "Francesco Novy <francesconovy@gmail.com>",
   "directories": {
     "doc": "doc",
     "test": "tests"
   },
-  "repository": "",
+  "repository": "https://github.com/Cropster/ember-visual-test",
   "scripts": {
     "build": "ember build",
     "start": "ember server",
