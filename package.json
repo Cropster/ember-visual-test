@@ -1,7 +1,7 @@
 {
   "name": "ember-visual-test",
   "version": "0.2.0",
-  "description": "The default blueprint for ember-cli addons.",
+  "description": "Test screens in acceptance/integration tests for visual changes over time.",
   "keywords": [
     "ember-addon"
   ],
