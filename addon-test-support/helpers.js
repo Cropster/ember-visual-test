@@ -7,7 +7,10 @@ export async function capture(assert, fileName, { selector = null, fullPage = tr
     prepareCaptureMode();
 
     // Wait forever
-    return assert.async();
+    assert.async();
+    return new RSVP.Promise(() => {
+      // Never resolve this...
+    });
   }
 
   // If not in capture mode, make a request to the middleware to capture a screenshot in node
