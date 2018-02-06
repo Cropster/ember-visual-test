@@ -342,7 +342,7 @@ module.exports = {
   },
 
   isDevelopingAddon() {
-    return true;
+    return false;
   }
 
 };
