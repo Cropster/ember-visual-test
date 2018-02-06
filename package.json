@@ -1,6 +1,6 @@
 {
   "name": "ember-visual-test",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Test screens in acceptance/integration tests for visual changes over time.",
   "keywords": [
     "ember-addon"
