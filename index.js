@@ -82,6 +82,9 @@ module.exports = {
     }
     options.os = osType;
 
+    this._debugLog('Setting up ember-visual-test...');
+    this._debugLog(options);
+
     this.import('vendor/visual-test.css', {
       type: 'test'
     });
@@ -91,13 +94,11 @@ module.exports = {
     let options = this.visualTest;
 
     let flags = [
-      '--window-size=1440,900',
-      '--disable-gpu',
+      '--enable-logging'
     ];
 
     let noSandbox = false;
     if (process.env.TRAVIS || process.env.CIRCLECI) {
-      flags.push('--no-sandbox');
       noSandbox = true;
     }
 
@@ -107,11 +108,17 @@ module.exports = {
         flags,
         port: options.chromePort,
         noSandbox
+      },
+      browser: {
+        browserLog: options.debugLogging
       }
     });
 
     // This is started while the app is building, so we can assume this will be ready
+    this._debugLog('Starting chrome instance...');
     await browser.init();
+    this._debugLog(`Chrome instance initialized with port=${browser.port}`);
+
     return browser;
   },
 
@@ -175,7 +182,6 @@ module.exports = {
     await tab.saveScreenshot(fullTmpPath, screenshotOptions);
 
     try {
-      await tab.close();
       await browser.close();
     } catch(e) {
       console.error('Error closing the browser...');
