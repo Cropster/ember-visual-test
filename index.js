@@ -4,7 +4,7 @@ const commands = require('./lib/commands');
 const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
-const PNG = require('pngjs').PNG;
+const { PNG } = require('pngjs');
 const pixelmatch = require('pixelmatch');
 const RSVP = require('rsvp');
 const HeadlessChrome = require('simple-headless-chrome');
@@ -27,13 +27,16 @@ module.exports = {
     debugLogging: false,
     imgurClientId: null,
     groupByOs: true,
-    chromePort: 0
+    chromePort: 0,
+    windowWidth: 1024,
+    windowHeight: 768
   },
 
   included(app) {
     this._super.included(app);
     this._ensureThisImport();
 
+    this._debugLog('Setting up ember-visual-test...');
     let options = Object.assign({}, this.visualTest);
     let newOptions = app.options.visualTest || {};
 
@@ -67,6 +70,12 @@ module.exports = {
     if (newOptions.chromePort) {
       options.chromePort = newOptions.chromePort;
     }
+    if (newOptions.windowWidth) {
+      options.windowWidth = newOptions.windowWidth;
+    }
+    if (newOptions.windowHeight) {
+      options.windowHeight = newOptions.windowHeight;
+    }
 
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
     this.visualTest = options;
@@ -91,27 +100,38 @@ module.exports = {
     let options = this.visualTest;
 
     let flags = [
-      '--window-size=1440,900',
-      '--disable-gpu',
+      '--enable-logging'
     ];
+
 
     let noSandbox = false;
     if (process.env.TRAVIS || process.env.CIRCLECI) {
-      flags.push('--no-sandbox');
       noSandbox = true;
     }
+
 
     const browser = new HeadlessChrome({
       headless: true,
       chrome: {
         flags,
-        port: options.chromePort,
+        port: options.port,
+        userDataDir: null,
         noSandbox
+      },
+      deviceMetrics: {
+        width: options.windowWidth,
+        height: options.windowHeight,
+      },
+      browser: {
+        browserLog: options.debugLogging
       }
     });
 
     // This is started while the app is building, so we can assume this will be ready
+    this._debugLog('Starting chrome instance...');
     await browser.init();
+    this._debugLog(`Chrome instance initialized with port=${browser.port}`);
+
     return browser;
   },
 
@@ -175,7 +195,6 @@ module.exports = {
     await tab.saveScreenshot(fullTmpPath, screenshotOptions);
 
     try {
-      await tab.close();
       await browser.close();
     } catch(e) {
       console.error('Error closing the browser...');
