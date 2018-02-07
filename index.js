@@ -26,7 +26,8 @@ module.exports = {
     imageLogging: false,
     debugLogging: false,
     imgurClientId: null,
-    groupByOs: true
+    groupByOs: true,
+    chromePort: 0
   },
 
   included(app) {
@@ -63,6 +64,9 @@ module.exports = {
     if (newOptions.groupByOs) {
       options.groupByOs = newOptions.groupByOs;
     }
+    if (newOptions.chromePort) {
+      options.chromePort = newOptions.chromePort;
+    }
 
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
     this.visualTest = options;
@@ -84,19 +88,25 @@ module.exports = {
   },
 
   _launchBrowser: async function() {
+    let options = this.visualTest;
+
     let flags = [
       '--window-size=1440,900',
       '--disable-gpu',
     ];
 
-    if (process.env.TRAVIS) {
+    let noSandbox = false;
+    if (process.env.TRAVIS || process.env.CIRCLECI) {
       flags.push('--no-sandbox');
+      noSandbox = true;
     }
 
     const browser = new HeadlessChrome({
       headless: true,
       chrome: {
-        flags
+        flags,
+        port: options.chromePort,
+        noSandbox
       }
     });
 
