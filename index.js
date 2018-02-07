@@ -119,8 +119,14 @@ module.exports = {
 
   _makeScreenshots: async function(url, fileName, { selector, fullPage }) {
     let options = this.visualTest;
-    let browser = await this._launchBrowser();
-
+    let browser;
+    try {
+      browser = await this._launchBrowser();
+    } catch(e) {
+      console.error('Error when launching browser!');
+      console.error(e);
+      return { newBaseline: false, newScreenshotUrl: null, chromeError: true };
+    }
     let tab = await browser.newTab({ privateTab: false });
 
     await tab.goTo(url);
@@ -158,8 +164,13 @@ module.exports = {
     this._imageLog(`Making comparison screenshot ${fileName}`);
     await tab.saveScreenshot(fullTmpPath, screenshotOptions);
 
-    await tab.close();
-    await browser.close();
+    try {
+      await tab.close();
+      await browser.close();
+    } catch(e) {
+      console.error('Error closing the browser...');
+      console.error(e);
+    }
     return { newBaseline, newScreenshotUrl };
   },
 
@@ -248,8 +259,9 @@ module.exports = {
           if (!error && response.statusCode === 200) {
             resolve(body.data.link);
           } else {
+            console.error('Error sending data to imgur...');
             console.error(body);
-            reject(body);
+            resolve(null); // We still want to resolve, as that is no reason to let the test error out
           }
         }
       );

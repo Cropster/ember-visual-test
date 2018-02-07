@@ -2,8 +2,20 @@ import { dasherize } from '@ember/string';
 import RSVP from 'rsvp';
 
 export async function capture(assert, fileName, { selector = null, fullPage = true } = {}) {
+  let testId = assert.test.testId;
+
+  let queryParamString = window.location.search.substr(1);
+  let queryParams = queryParamString.split('&');
+
   // If is in capture mode, set the capture up & stop the tests
-  if (window.location.search.includes('&capture=true')) {
+  if (queryParams.includes('capture=true')) {
+
+    // If it is not the current test, skip...
+    // Otherwise, it would be impossible to have multiple captures in one test
+    if (!queryParams.includes(`fileName=${fileName}`)) {
+      return;
+    }
+
     prepareCaptureMode();
 
     // Wait forever
@@ -14,8 +26,13 @@ export async function capture(assert, fileName, { selector = null, fullPage = tr
   }
 
   // If not in capture mode, make a request to the middleware to capture a screenshot in node
-  let testId = assert.test.testId;
-  let url = `${window.location.protocol}//${window.location.host}${window.location.pathname}?testId=${testId}&capture=true`;
+  let urlQueryParams = [
+    `testId=${testId}`,
+    `fileName=${fileName}`,
+    'capture=true'
+  ];
+
+  let url = `${window.location.protocol}//${window.location.host}${window.location.pathname}?${urlQueryParams.join('&')}`;
   let response = await requestCapture(url, fileName, { selector, fullPage });
 
   if (response.status === 'SUCCESS') {

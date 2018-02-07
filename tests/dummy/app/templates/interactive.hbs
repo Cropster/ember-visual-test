@@ -1,0 +1,17 @@
+<h1>
+  This is an interactive page
+</h1>
+
+{{#if showAlternate}}
+  <p>
+    This is a different text! Hit the button again to change it back...
+  </p>
+{{else}}
+  <p>
+    When you hit the button below, the page will change.
+  </p>
+{{/if}}
+
+<button {{action 'change'}}>
+  Change now!
+</button>
