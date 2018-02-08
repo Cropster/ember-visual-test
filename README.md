@@ -115,6 +115,15 @@ Also note that for the capture helper to work, you'll need to include the babel 
 }
 ```
 
+#### Using with Mirage
+
+If you are using [ember-cli-mirage](https://github.com/samselikoff/ember-cli-mirage) for acceptance testing
+you'll need to add a passthrough for `/visual-test/make-screenshot` to your project's `mirage/config.js`.
+
+```js
+this.passthrough('/visual-test/make-screenshot');
+```
+
 ### CLI
 
 There are also two CLI commands to use: 
@@ -132,7 +141,7 @@ If you want to "ignore" some element in the capture (e.g. because it changes in 
 you can add the attribute `data-test-visual-ignore` to it, which will give it an opacity of 0 
 when run in capture mode.
 
-## Technical explanation
+### Technical explanation
 
 This is how this addon actually works:
 
