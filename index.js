@@ -29,7 +29,8 @@ module.exports = {
     groupByOs: true,
     chromePort: 0,
     windowWidth: 1024,
-    windowHeight: 768
+    windowHeight: 768,
+    noSandbox: false
   },
 
   included(app) {
@@ -76,6 +77,9 @@ module.exports = {
     if (newOptions.windowHeight) {
       options.windowHeight = newOptions.windowHeight;
     }
+    if (newOptions.noSandbox) {
+      options.noSandbox = newOptions.noSandbox;
+    }
 
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
     this.visualTest = options;
@@ -104,7 +108,7 @@ module.exports = {
     ];
 
 
-    let noSandbox = false;
+    let noSandbox = options.noSandbox;
     if (process.env.TRAVIS || process.env.CIRCLECI) {
       noSandbox = true;
     }
