@@ -141,7 +141,7 @@ If you want to "ignore" some element in the capture (e.g. because it changes in 
 you can add the attribute `data-test-visual-ignore` to it, which will give it an opacity of 0 
 when run in capture mode.
 
-### Technical explanation
+## Technical explanation
 
 This is how this addon actually works:
 
