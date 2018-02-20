@@ -1,7 +1,7 @@
 import { dasherize } from '@ember/string';
 import RSVP from 'rsvp';
 
-export async function capture(assert, fileName, { selector = null, fullPage = true } = {}) {
+export async function capture(assert, fileName, { selector = null, fullPage = true, delayMs = 100 } = {}) {
   let testId = assert.test.testId;
 
   let queryParamString = window.location.search.substr(1);
@@ -33,7 +33,7 @@ export async function capture(assert, fileName, { selector = null, fullPage = tr
   ];
 
   let url = `${window.location.protocol}//${window.location.host}${window.location.pathname}?${urlQueryParams.join('&')}`;
-  let response = await requestCapture(url, fileName, { selector, fullPage });
+  let response = await requestCapture(url, fileName, { selector, fullPage, delayMs });
 
   if (response.status === 'SUCCESS') {
     assert.ok(true, `visual-test: ${fileName} has not changed`);
@@ -59,7 +59,7 @@ export function prepareCaptureMode() {
   }
 }
 
-export async function requestCapture(url, fileName, { selector, fullPage }) {
+export async function requestCapture(url, fileName, { selector, fullPage, delayMs }) {
   // If not in capture mode, make a request to the middleware to capture a screenshot in node
   fileName = dasherize(fileName);
 
@@ -67,7 +67,8 @@ export async function requestCapture(url, fileName, { selector, fullPage }) {
     url,
     name: fileName,
     selector,
-    fullPage
+    fullPage,
+    delayMs
   };
 
   return await ajaxPost('/visual-test/make-screenshot', data, 'application/json');

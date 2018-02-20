@@ -151,7 +151,7 @@ module.exports = {
     }
   },
 
-  _makeScreenshots: async function(url, fileName, { selector, fullPage }) {
+  _makeScreenshots: async function(url, fileName, { selector, fullPage, delayMs }) {
     let options = this.visualTest;
     let browser;
     try {
@@ -178,7 +178,7 @@ module.exports = {
     let screenshotOptions = { selector, fullPage };
 
     // To avoid problems...
-    await tab.wait(100);
+    await tab.wait(delayMs);
 
     // only if the file does not exist, or if we force to save, do we write the actual images themselves
     let newScreenshotUrl = null;
@@ -316,6 +316,7 @@ module.exports = {
       let fileName = this._getFileName(req.body.name);
       let selector = req.body.selector;
       let fullPage = req.body.fullPage || false;
+      let delayMs = req.body.delayMs ? parseInt(req.body.delayMs) : 100;
 
       if (fullPage === 'true') {
         fullPage = true;
@@ -325,7 +326,7 @@ module.exports = {
       }
 
       let data = {};
-      this._makeScreenshots(url, fileName, { selector, fullPage }).then(({ newBaseline, newScreenshotUrl }) => {
+      this._makeScreenshots(url, fileName, { selector, fullPage, delayMs }).then(({ newBaseline, newScreenshotUrl }) => {
         data.newScreenshotUrl = newScreenshotUrl;
         data.newBaseline = newBaseline;
         return this._compareImages(fileName);
