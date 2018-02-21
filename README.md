@@ -86,6 +86,7 @@ The capture function takes three parameters: `capture(assert, identifier, option
 * `options`: An optional object with options. The following options are allowed:
   * `selector`: An optional selector to screenshot. If not specified, the whole page will be captured.
   * `fullPage`: If a full page screenshot should be made, or just the browsers viewport. Defaults to `true`.
+  * `delayMs`: Delay (in milliseconds) before taking the screenshot. Useful when you need to wait for CSS transitions, etc. Defaults to `100`.
   
 This works in both acceptance tests as well as in integration tests.
 
