@@ -11,6 +11,17 @@ const HeadlessChrome = require('simple-headless-chrome');
 const request = require('request');
 const os = require('os');
 
+let osType = os.type().toLowerCase();
+
+switch (osType) {
+  case 'windows_nt':
+    osType = 'win';
+    break;
+  case 'darwin':
+    osType = 'mac';
+    break;
+}
+
 module.exports = {
   name: 'ember-visual-test',
 
@@ -44,15 +55,6 @@ module.exports = {
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
     this.visualTest = options;
 
-    let osType = os.type().toLowerCase();
-    switch (osType) {
-      case 'windows_nt':
-        osType = 'win';
-        break;
-      case 'darwin':
-        osType = 'mac';
-        break;
-    }
     options.os = osType;
 
     this.import('vendor/visual-test.css', {
@@ -340,9 +342,9 @@ module.exports = {
 
   _getFileName(fileName) {
     let options = this.visualTest;
+    
     if (options.groupByOs) {
-      let os = options.os;
-      return `${os}-${fileName}`;
+      return `${osType}-${fileName}`;
     }
     return fileName;
   },
