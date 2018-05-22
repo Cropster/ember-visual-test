@@ -26,6 +26,7 @@ module.exports = {
     imageLogging: false,
     debugLogging: false,
     imgurClientId: null,
+    includeAA: true,
     groupByOs: true,
     chromePort: 0,
     windowWidth: 1024,
@@ -38,48 +39,7 @@ module.exports = {
     this._ensureThisImport();
 
     this._debugLog('Setting up ember-visual-test...');
-    let options = Object.assign({}, this.visualTest);
-    let newOptions = app.options.visualTest || {};
-
-    if (newOptions.imageDirectory) {
-      options.imageDirectory = newOptions.imageDirectory;
-    }
-    if (newOptions.imageDiffDirectory) {
-      options.imageDiffDirectory = newOptions.imageDiffDirectory;
-    }
-    if (newOptions.imageTmpDirectory) {
-      options.imageTmpDirectory = newOptions.imageTmpDirectory;
-    }
-    if (newOptions.imageMatchAllowedFailures) {
-      options.imageMatchAllowedFailures = newOptions.imageMatchAllowedFailures;
-    }
-    if (newOptions.imageMatchThreshold) {
-      options.imageMatchThreshold = newOptions.imageMatchThreshold;
-    }
-    if (newOptions.imageLogging) {
-      options.imageLogging = newOptions.imageLogging;
-    }
-    if (newOptions.debugLogging) {
-      options.debugLogging = newOptions.debugLogging;
-    }
-    if (newOptions.imgurClientId) {
-      options.imgurClientId = newOptions.imgurClientId;
-    }
-    if (newOptions.groupByOs) {
-      options.groupByOs = newOptions.groupByOs;
-    }
-    if (newOptions.chromePort) {
-      options.chromePort = newOptions.chromePort;
-    }
-    if (newOptions.windowWidth) {
-      options.windowWidth = newOptions.windowWidth;
-    }
-    if (newOptions.windowHeight) {
-      options.windowHeight = newOptions.windowHeight;
-    }
-    if (newOptions.noSandbox) {
-      options.noSandbox = newOptions.noSandbox;
-    }
+    let options = Object.assign({}, this.visualTest, app.options.visualTest);
 
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
     this.visualTest = options;
@@ -231,7 +191,7 @@ module.exports = {
 
         let errorPixelCount = pixelmatch(img1.data, img2.data, diff.data, img1.width, img1.height, {
           threshold: options.imageMatchThreshold,
-          includeAA: true
+          includeAA: options.includeAA
         });
 
         if (errorPixelCount <= options.imageMatchAllowedFailures) {
