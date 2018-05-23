@@ -7,7 +7,6 @@ Test screens in acceptance/integration tests for visual changes over time.
 [![npm version](https://badge.fury.io/js/ember-visual-test.svg)](https://badge.fury.io/js/ember-visual-test)
 
 ## Installation
-------------------------------------------------------------------------------
 
 * `ember install ember-visual-test`
 
