@@ -6,7 +6,7 @@ Test screens in acceptance/integration tests for visual changes over time.
 [![Build Status](https://travis-ci.org/Cropster/ember-visual-test.svg?branch=master)](https://travis-ci.org/Cropster/ember-visual-test)
 [![npm version](https://badge.fury.io/js/ember-visual-test.svg)](https://badge.fury.io/js/ember-visual-test)
 
-Installation
+## Installation
 ------------------------------------------------------------------------------
 
 * `ember install ember-visual-test`
