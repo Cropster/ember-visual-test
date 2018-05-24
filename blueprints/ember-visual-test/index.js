@@ -5,10 +5,10 @@ module.exports = {
     // no-op
   },
 
-  afterInstall: function(options) {
+  afterInstall: function() {
     return this.insertIntoFile('.gitignore',
-      `/visual-test-output/tmp/*.png
-/visual-test-output/diff/*.png`).then(function() {
+      `/visual-test-output/tmp/**/*.png
+/visual-test-output/diff/**/*.png`).then(function() {
       return this.insertIntoFile('.npmignore', `/visual-test-output`);
     }.bind(this))
   }

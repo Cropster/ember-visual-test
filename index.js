@@ -2,7 +2,7 @@
 
 const commands = require('./lib/commands');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const bodyParser = require('body-parser');
 const { PNG } = require('pngjs');
 const pixelmatch = require('pixelmatch');
@@ -67,12 +67,10 @@ module.exports = {
       '--enable-logging'
     ];
 
-
     let noSandbox = options.noSandbox;
     if (process.env.TRAVIS || process.env.CIRCLECI) {
       noSandbox = true;
     }
-
 
     const browser = new HeadlessChrome({
       headless: true,
@@ -133,7 +131,7 @@ module.exports = {
     // This is inserted into the DOM by the capture helper when everything is ready
     await tab.waitForSelectorToLoad('#visual-test-has-loaded', { interval: 100 });
 
-    let fullPath = path.join(options.imageDirectory, fileName);
+    let fullPath = `${path.join(options.imageDirectory, fileName)}.png`;
 
     let screenshotOptions = { selector, fullPage };
 
@@ -142,21 +140,22 @@ module.exports = {
 
     // only if the file does not exist, or if we force to save, do we write the actual images themselves
     let newScreenshotUrl = null;
-    let newBaseline = options.forceBuildVisualTestImages || !fs.existsSync(`${fullPath}.png`);
+    let newBaseline = options.forceBuildVisualTestImages || !fs.existsSync(fullPath);
     if (newBaseline) {
       this._imageLog(`Making base screenshot ${fileName}`);
-      await tab.saveScreenshot(fullPath, screenshotOptions);
 
-      newScreenshotUrl = await this._tryUploadToImgur(`${fullPath}.png`);
+      fs.outputFileSync(fullPath, await tab.getScreenshot(screenshotOptions, true));
+
+      newScreenshotUrl = await this._tryUploadToImgur(fullPath);
       if (newScreenshotUrl) {
         this._imageLog(`New screenshot can be found under ${newScreenshotUrl}`);
       }
     }
 
     // Always make the tmp screenshot
-    let fullTmpPath = path.join(options.imageTmpDirectory, fileName);
+    let fullTmpPath = `${path.join(options.imageTmpDirectory, fileName)}.png`;
     this._imageLog(`Making comparison screenshot ${fileName}`);
-    await tab.saveScreenshot(fullTmpPath, screenshotOptions);
+    fs.outputFileSync(fullTmpPath, await tab.getScreenshot(screenshotOptions, true));
 
     try {
       await browser.close();
@@ -175,21 +174,21 @@ module.exports = {
       fileName = `${fileName}.png`;
     }
 
-    let baselineImgPath = path.join(options.imageDirectory, '/', fileName);
-    let imgPath = path.join(options.imageTmpDirectory, '/', fileName);
+    let baselineImgPath = path.join(options.imageDirectory, fileName);
+    let imgPath = path.join(options.imageTmpDirectory, fileName);
 
     return new RSVP.Promise(function(resolve, reject) {
-      let img1 = fs.createReadStream(baselineImgPath).pipe(new PNG()).on('parsed', doneReading);
-      let img2 = fs.createReadStream(imgPath).pipe(new PNG()).on('parsed', doneReading);
+      let baseImg = fs.createReadStream(baselineImgPath).pipe(new PNG()).on('parsed', doneReading);
+      let tmpImg = fs.createReadStream(imgPath).pipe(new PNG()).on('parsed', doneReading);
       let filesRead = 0;
 
       function doneReading() {
         if (++filesRead < 2) {
           return;
         }
-        let diff = new PNG({ width: img1.width, height: img1.height });
 
-        let errorPixelCount = pixelmatch(img1.data, img2.data, diff.data, img1.width, img1.height, {
+        const diff = new PNG({ width: baseImg.width, height: baseImg.height });
+        const errorPixelCount = pixelmatch(baseImg.data, tmpImg.data, diff.data, baseImg.width, baseImg.height, {
           threshold: options.imageMatchThreshold,
           includeAA: options.includeAA
         });
@@ -198,21 +197,21 @@ module.exports = {
           return resolve();
         }
 
-        let diffPath = path.join(options.imageDiffDirectory, '/', fileName);
-        diff.pack().pipe(fs.createWriteStream(diffPath)).on('close', () => {
-          RSVP.all([
-            _this._tryUploadToImgur(imgPath),
-            _this._tryUploadToImgur(diffPath)
-          ]).then(([urlTmp, urlDiff]) => {
-            reject({
-              errorPixelCount,
-              allowedErrorPixelCount: options.imageMatchAllowedFailures,
-              diffPath: urlDiff || diffPath,
-              tmpPath: urlTmp || imgPath
-            });
-          }).catch(reject);
+        let diffPath = path.join(options.imageDiffDirectory, fileName);
 
-        });
+        fs.outputFileSync(diffPath, PNG.sync.write(diff));
+
+        RSVP.all([
+          _this._tryUploadToImgur(imgPath),
+          _this._tryUploadToImgur(diffPath)
+        ]).then(([urlTmp, urlDiff]) => {
+          reject({
+            errorPixelCount,
+            allowedErrorPixelCount: options.imageMatchAllowedFailures,
+            diffPath: urlDiff || diffPath,
+            tmpPath: urlTmp || imgPath
+          });
+        }).catch(reject);
       }
     });
   },
@@ -289,11 +288,12 @@ module.exports = {
       this._makeScreenshots(url, fileName, { selector, fullPage, delayMs }).then(({ newBaseline, newScreenshotUrl }) => {
         data.newScreenshotUrl = newScreenshotUrl;
         data.newBaseline = newBaseline;
+
         return this._compareImages(fileName);
       }).then(() => {
         data.status = 'SUCCESS';
         res.send(data);
-      }).catch((reason) => {
+        }).catch((reason) => {
         let diffPath = reason ? reason.diffPath : null;
         let tmpPath = reason ? reason.tmpPath : null;
         let errorPixelCount = reason ? reason.errorPixelCount : null;
@@ -340,9 +340,16 @@ module.exports = {
 
   _getFileName(fileName) {
     let options = this.visualTest;
+
     if (options.groupByOs) {
       let os = options.os;
-      return `${os}-${fileName}`;
+
+      const filePath = path.parse(fileName);
+
+      filePath.name = `${os}-${filePath.name}`;
+      delete filePath.base;
+
+      return path.format(filePath);
     }
     return fileName;
   },
