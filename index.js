@@ -49,8 +49,8 @@ module.exports = {
     this._super.included(app);
     this._ensureThisImport();
 
-    this._debugLog('Setting up ember-visual-test...');
     let options = Object.assign({}, this.visualTest, app.options.visualTest);
+    this._debugLog('Setting up ember-visual-test...');
 
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
     this.visualTest = options;
