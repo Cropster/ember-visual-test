@@ -11,6 +11,17 @@ const HeadlessChrome = require('simple-headless-chrome');
 const request = require('request');
 const os = require('os');
 
+let osType = os.type().toLowerCase();
+
+switch (osType) {
+  case 'windows_nt':
+    osType = 'win';
+    break;
+  case 'darwin':
+    osType = 'mac';
+    break;
+}
+
 module.exports = {
   name: 'ember-visual-test',
 
@@ -31,29 +42,13 @@ module.exports = {
     chromePort: 0,
     windowWidth: 1024,
     windowHeight: 768,
-    noSandbox: false
+    noSandbox: false,
+    os: osType
   },
 
   included(app) {
     this._super.included(app);
     this._ensureThisImport();
-
-    let options = Object.assign({}, this.visualTest, app.options.visualTest);
-    this._debugLog('Setting up ember-visual-test...');
-
-    options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
-    this.visualTest = options;
-
-    let osType = os.type().toLowerCase();
-    switch (osType) {
-      case 'windows_nt':
-        osType = 'win';
-        break;
-      case 'darwin':
-        osType = 'mac';
-        break;
-    }
-    options.os = osType;
 
     this.import('vendor/visual-test.css', {
       type: 'test'
@@ -308,7 +303,13 @@ module.exports = {
     });
   },
 
-  testemMiddleware: function(app) {
+  testemMiddleware: function (app) {
+    this._debugLog('Setting up ember-visual-test...');
+    let options = Object.assign({}, this.visualTest, app.options.visualTest);
+
+    options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
+    this.visualTest = options;
+
     this.middleware(app);
   },
 
@@ -340,9 +341,9 @@ module.exports = {
 
   _getFileName(fileName) {
     let options = this.visualTest;
+
     if (options.groupByOs) {
-      let os = options.os;
-      return `${os}-${fileName}`;
+      return `${options.os}-${fileName}`;
     }
     return fileName;
   },
