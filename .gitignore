@@ -22,5 +22,5 @@ testem.log
 bower.json.ember-try
 package.json.ember-try
 
-visual-test-output/diff/*png
-visual-test-output/tmp/*.png
+visual-test-output/diff/**/*.png
+visual-test-output/tmp/**/*.png

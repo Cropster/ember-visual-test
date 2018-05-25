@@ -15,19 +15,21 @@ Test screens in acceptance/integration tests for visual changes over time.
 Use ember-visual-test in your acceptance tests like this:
 
 ```js
-import { test } from 'qunit';
-import moduleForAcceptance from '../../tests/helpers/module-for-acceptance';
-import { capture } from 'ember-visual-test/test-support/helpers';
 
-moduleForAcceptance('Acceptance | visual test');
+import { visit } from '@ember/test-helpers';
+import { module, test } from 'qunit';
+import { setupApplicationTest } from 'ember-qunit';
+import { capture } from 'dummy/tests/helpers/visual-test';
 
-test('visiting /', async function(assert) {
-  await visit('/');
+module('Acceptance | visual test', function(hooks) {
+  setupApplicationTest(hooks);
 
-  assert.equal(currentURL(), '/');
+  test('visiting /', async function(assert) {
+    await visit('/');
 
-  await capture(assert, 'test-file-name');
-});
+    await capture(assert, 'visual-test');
+  });
+
 ```
 
 ## How does it work?
@@ -82,7 +84,7 @@ For information on how to turn on the by-OS comparison, see the settings section
 The capture function takes three parameters: `capture(assert, identifier, options)`
 
 * `assert`: The assert function. This assumes you are using qunit.
-* `identifier`: A unique string to identify this capture. This will be the file name of the generated images, and has to be unique across your whole application.
+* `identifier`: A unique string to identify this capture. This will be the file name of the generated images, and has to be unique across your whole application. If it contains '/', subdirectories will be created so you can group baseline images. 
 * `options`: An optional object with options. The following options are allowed:
   * `selector`: An optional selector to screenshot. If not specified, the whole page will be captured.
   * `fullPage`: If a full page screenshot should be made, or just the browsers viewport. Defaults to `true`.
