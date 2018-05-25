@@ -293,7 +293,7 @@ module.exports = {
       }).then(() => {
         data.status = 'SUCCESS';
         res.send(data);
-        }).catch((reason) => {
+      }).catch((reason) => {
         let diffPath = reason ? reason.diffPath : null;
         let tmpPath = reason ? reason.tmpPath : null;
         let errorPixelCount = reason ? reason.errorPixelCount : null;
