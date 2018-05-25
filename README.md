@@ -29,6 +29,7 @@ module('Acceptance | visual test', function(hooks) {
 
     await capture(assert, 'visual-test');
   });
+});
 
 ```
 
