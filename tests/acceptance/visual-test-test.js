@@ -19,4 +19,10 @@ module('Acceptance | visual test', function(hooks) {
 
     await capture(assert, 'subdir/visual-test');
   });
+
+  test('subdir/subdir path', async function(assert) {
+    await visit('/');
+
+    await capture(assert, 'subdir/subdir1/visual-test');
+  });
 });
