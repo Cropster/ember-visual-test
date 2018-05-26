@@ -60,9 +60,9 @@ module.exports = {
     });
   },
 
-  _launchBrowser: async function() {
-    if (this.browser) {
-      return this.browser;
+  _getBrowserTab: async function() {
+    if (this.tab) {
+      return this.tab;
     }
 
     let options = this.visualTest;
@@ -98,7 +98,14 @@ module.exports = {
     await this.browser.init();
     this._debugLog(`Chrome instance initialized with port=${this.browser.port}`);
 
-    return this.browser;
+    this.tab = await this.browser.newTab({ privateTab: false });
+
+    this.tab.onConsole((options) => {
+      let logValue = options.map((item) => item.value).join(' ');
+      this._debugLog(`Browser log: ${logValue}`);
+    });
+
+    return this.tab;
   },
 
   _imageLog(str) {
@@ -115,23 +122,17 @@ module.exports = {
 
   _makeScreenshots: async function(url, fileName, { selector, fullPage, delayMs }) {
     let options = this.visualTest;
-    let browser;
+    let tab;
 
     try {
-      browser = await this._launchBrowser();
+      tab = await this._getBrowserTab();
     } catch (e) {
       console.error('Error when launching browser!');
       console.error(e);
       return { newBaseline: false, newScreenshotUrl: null, chromeError: true };
     }
-    let tab = await browser.newTab({ privateTab: false });
 
     await tab.goTo(url);
-
-    tab.onConsole((options) => {
-      let logValue = options.map((item) => item.value).join(' ');
-      this._debugLog(`Browser log: ${logValue}`);
-    });
 
     // This is inserted into the DOM by the capture helper when everything is ready
     await tab.waitForSelectorToLoad('#visual-test-has-loaded', { interval: 100 });
