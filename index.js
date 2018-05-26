@@ -60,7 +60,7 @@ module.exports = {
     });
   },
 
-  _launchBrowser: async function() {
+  _launchBrowser: async function () {
     let options = this.visualTest;
 
     let flags = [
@@ -109,7 +109,7 @@ module.exports = {
     }
   },
 
-  _makeScreenshots: async function(url, fileName, { selector, fullPage, delayMs }) {
+  _makeScreenshots: async function (url, fileName, { selector, fullPage, delayMs }) {
     let options = this.visualTest;
     let browser;
 
@@ -118,9 +118,9 @@ module.exports = {
     } catch(e) {
       console.error('Error when launching browser!');
       console.error(e);
-      return {newBaseline: false, newScreenshotUrl: null, chromeError: true};
+      return { newBaseline: false, newScreenshotUrl: null, chromeError: true };
     }
-    let tab = await browser.newTab({privateTab: false});
+    let tab = await browser.newTab({ privateTab: false });
 
     await tab.goTo(url);
 
@@ -130,11 +130,11 @@ module.exports = {
     });
 
     // This is inserted into the DOM by the capture helper when everything is ready
-    await tab.waitForSelectorToLoad('#visual-test-has-loaded', {interval: 100});
+    await tab.waitForSelectorToLoad('#visual-test-has-loaded', { interval: 100 });
 
     let fullPath = `${path.join(options.imageDirectory, fileName)}.png`;
 
-    let screenshotOptions = {selector, fullPage};
+    let screenshotOptions = { selector, fullPage };
 
     // To avoid problems...
     await tab.wait(delayMs);
@@ -164,7 +164,7 @@ module.exports = {
       console.error('Error closing the browser...');
       console.error(e);
     }
-    return {newBaseline, newScreenshotUrl};
+    return { newBaseline, newScreenshotUrl };
   },
 
   _compareImages(fileName) {
@@ -200,7 +200,7 @@ module.exports = {
 
         let diffPath = path.join(options.imageDiffDirectory, fileName);
 
-       await fs.outputFile(diffPath, PNG.sync.write(diff));
+        await fs.outputFile(diffPath, PNG.sync.write(diff));
 
         RSVP.all([
           _this._tryUploadToImgur(imgPath),
@@ -217,7 +217,7 @@ module.exports = {
     });
   },
 
-  _tryUploadToImgur: async function(imagePath) {
+  _tryUploadToImgur: async function (imagePath) {
     let imgurClientID = this.visualTest.imgurClientId;
 
     if (!imgurClientID) {
@@ -225,7 +225,7 @@ module.exports = {
     }
 
     return await request.post(
-        'https://api.imgur.com/3/image', {
+      'https://api.imgur.com/3/image', {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Client-ID ' + imgurClientID
@@ -239,7 +239,7 @@ module.exports = {
       }).catch((error) => {
         console.error('Error sending data to imgur...');
         console.error(error);
-    });
+      });
   },
 
   middleware(app) {
@@ -290,16 +290,16 @@ module.exports = {
     });
   },
 
-  testemMiddleware: function(app) {
+  testemMiddleware: function (app) {
     this.middleware(app);
   },
 
-  serverMiddleware: function(options) {
+  serverMiddleware: function (options) {
     this.app = options.app;
     this.middleware(options.app);
   },
 
-  includedCommands: function() {
+  includedCommands: function () {
     return commands;
   },
 
