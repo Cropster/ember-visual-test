@@ -61,6 +61,10 @@ module.exports = {
   },
 
   _launchBrowser: async function() {
+    if (this.browser) {
+      return this.browser;
+    }
+
     let options = this.visualTest;
 
     let flags = [
@@ -72,7 +76,7 @@ module.exports = {
       noSandbox = true;
     }
 
-    const browser = new HeadlessChrome({
+    this.browser = new HeadlessChrome({
       headless: true,
       chrome: {
         flags,
@@ -91,10 +95,10 @@ module.exports = {
 
     // This is started while the app is building, so we can assume this will be ready
     this._debugLog('Starting chrome instance...');
-    await browser.init();
-    this._debugLog(`Chrome instance initialized with port=${browser.port}`);
+    await this.browser.init();
+    this._debugLog(`Chrome instance initialized with port=${this.browser.port}`);
 
-    return browser;
+    return this.browser;
   },
 
   _imageLog(str) {
@@ -158,12 +162,6 @@ module.exports = {
     this._imageLog(`Making comparison screenshot ${fileName}`);
     await fs.outputFile(fullTmpPath, await tab.getScreenshot(screenshotOptions, true));
 
-    try {
-      await browser.close();
-    } catch (e) {
-      console.error('Error closing the browser...');
-      console.error(e);
-    }
     return { newBaseline, newScreenshotUrl };
   },
 
