@@ -60,7 +60,7 @@ module.exports = {
     });
   },
 
-  _launchBrowser: async function () {
+  _launchBrowser: async function() {
     let options = this.visualTest;
 
     let flags = [
@@ -109,13 +109,13 @@ module.exports = {
     }
   },
 
-  _makeScreenshots: async function (url, fileName, { selector, fullPage, delayMs }) {
+  _makeScreenshots: async function(url, fileName, { selector, fullPage, delayMs }) {
     let options = this.visualTest;
     let browser;
 
     try {
       browser = await this._launchBrowser();
-    } catch(e) {
+    } catch (e) {
       console.error('Error when launching browser!');
       console.error(e);
       return { newBaseline: false, newScreenshotUrl: null, chromeError: true };
@@ -178,7 +178,7 @@ module.exports = {
     let baselineImgPath = path.join(options.imageDirectory, fileName);
     let imgPath = path.join(options.imageTmpDirectory, fileName);
 
-    return new RSVP.Promise(async function (resolve, reject) {
+    return new RSVP.Promise(async function(resolve, reject) {
       let baseImg = fs.createReadStream(baselineImgPath).pipe(new PNG()).on('parsed', doneReading);
       let tmpImg = fs.createReadStream(imgPath).pipe(new PNG()).on('parsed', doneReading);
       let filesRead = 0;
@@ -217,7 +217,7 @@ module.exports = {
     });
   },
 
-  _tryUploadToImgur: async function (imagePath) {
+  _tryUploadToImgur: async function(imagePath) {
     let imgurClientID = this.visualTest.imgurClientId;
 
     if (!imgurClientID) {
@@ -290,16 +290,16 @@ module.exports = {
     });
   },
 
-  testemMiddleware: function (app) {
+  testemMiddleware: function(app) {
     this.middleware(app);
   },
 
-  serverMiddleware: function (options) {
+  serverMiddleware: function(options) {
     this.app = options.app;
     this.middleware(options.app);
   },
 
-  includedCommands: function () {
+  includedCommands: function() {
     return commands;
   },
 
