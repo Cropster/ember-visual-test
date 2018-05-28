@@ -1,0 +1,23 @@
+{{docs-header}}
+
+{{#docs-viewer as |viewer|}}
+
+  {{#viewer.nav as |nav|}}
+    {{nav.item 'Introduction' 'docs.index'}}
+    {{nav.item 'Usage' 'docs.usage'}}
+    {{nav.item 'How does it work?' 'docs.how'}}
+    {{nav.item 'Note on different platforms' 'docs.platforms'}}
+    {{nav.item 'Styles' 'docs.styles'}}
+    {{nav.item 'Technical explanation' 'docs.tech'}}
+    {{nav.item 'Example' 'docs.example'}}
+  {{/viewer.nav}}
+
+  {{#viewer.main}}
+    <div class="docs-container">
+      <div class="docs-section">
+        {{outlet}}
+      </div>
+    </div>
+  {{/viewer.main}}
+
+{{/docs-viewer}}
