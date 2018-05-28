@@ -60,9 +60,9 @@ module.exports = {
     });
   },
 
-  _getBrowserTab: async function() {
-    if (this.tab) {
-      return this.tab;
+  async _getBrowser() {
+    if (this.browser) {
+      return this.browser;
     }
 
     let options = this.visualTest;
@@ -98,14 +98,19 @@ module.exports = {
     await this.browser.init();
     this._debugLog(`Chrome instance initialized with port=${this.browser.port}`);
 
-    this.tab = await this.browser.newTab({ privateTab: false });
+    return this.browser;
+  },
 
-    this.tab.onConsole((options) => {
+  async _getBrowserTab() {
+    const browser = await this._getBrowser();
+    const tab = await browser.newTab({ privateTab: false });
+
+    tab.onConsole((options) => {
       let logValue = options.map((item) => item.value).join(' ');
       this._debugLog(`Browser log: ${logValue}`);
     });
 
-    return this.tab;
+    return tab;
   },
 
   _imageLog(str) {
@@ -162,6 +167,13 @@ module.exports = {
     let fullTmpPath = `${path.join(options.imageTmpDirectory, fileName)}.png`;
     this._imageLog(`Making comparison screenshot ${fileName}`);
     await fs.outputFile(fullTmpPath, await tab.getScreenshot(screenshotOptions, true));
+
+    try {
+      await tab.close();
+    } catch(e) {
+      console.error('Error closing a tab...');
+      console.error(e);
+    }
 
     return { newBaseline, newScreenshotUrl };
   },
