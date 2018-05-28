@@ -8,7 +8,7 @@ const { PNG } = require('pngjs');
 const pixelmatch = require('pixelmatch');
 const RSVP = require('rsvp');
 const HeadlessChrome = require('simple-headless-chrome');
-const request = require('request');
+const request = require('request-promise-native');
 const os = require('os');
 
 module.exports = {
@@ -112,9 +112,10 @@ module.exports = {
   _makeScreenshots: async function(url, fileName, { selector, fullPage, delayMs }) {
     let options = this.visualTest;
     let browser;
+
     try {
       browser = await this._launchBrowser();
-    } catch(e) {
+    } catch (e) {
       console.error('Error when launching browser!');
       console.error(e);
       return { newBaseline: false, newScreenshotUrl: null, chromeError: true };
@@ -144,7 +145,7 @@ module.exports = {
     if (newBaseline) {
       this._imageLog(`Making base screenshot ${fileName}`);
 
-      fs.outputFileSync(fullPath, await tab.getScreenshot(screenshotOptions, true));
+      await fs.outputFile(fullPath, await tab.getScreenshot(screenshotOptions, true));
 
       newScreenshotUrl = await this._tryUploadToImgur(fullPath);
       if (newScreenshotUrl) {
@@ -155,11 +156,11 @@ module.exports = {
     // Always make the tmp screenshot
     let fullTmpPath = `${path.join(options.imageTmpDirectory, fileName)}.png`;
     this._imageLog(`Making comparison screenshot ${fileName}`);
-    fs.outputFileSync(fullTmpPath, await tab.getScreenshot(screenshotOptions, true));
+    await fs.outputFile(fullTmpPath, await tab.getScreenshot(screenshotOptions, true));
 
     try {
       await browser.close();
-    } catch(e) {
+    } catch (e) {
       console.error('Error closing the browser...');
       console.error(e);
     }
@@ -177,12 +178,12 @@ module.exports = {
     let baselineImgPath = path.join(options.imageDirectory, fileName);
     let imgPath = path.join(options.imageTmpDirectory, fileName);
 
-    return new RSVP.Promise(function(resolve, reject) {
+    return new RSVP.Promise(async function(resolve, reject) {
       let baseImg = fs.createReadStream(baselineImgPath).pipe(new PNG()).on('parsed', doneReading);
       let tmpImg = fs.createReadStream(imgPath).pipe(new PNG()).on('parsed', doneReading);
       let filesRead = 0;
 
-      function doneReading() {
+      async function doneReading() {
         if (++filesRead < 2) {
           return;
         }
@@ -199,7 +200,7 @@ module.exports = {
 
         let diffPath = path.join(options.imageDiffDirectory, fileName);
 
-        fs.outputFileSync(diffPath, PNG.sync.write(diff));
+        await fs.outputFile(diffPath, PNG.sync.write(diff));
 
         RSVP.all([
           _this._tryUploadToImgur(imgPath),
@@ -223,41 +224,22 @@ module.exports = {
       return RSVP.resolve(null);
     }
 
-    let fileBase64 = await new RSVP.Promise((resolve, reject) => {
-      fs.readFile(imagePath, { encoding: 'base64' }, function(err, data) {
-        if (err) {
-          return reject(err);
-        }
-        resolve(data);
-      });
-    });
-
-    return await new RSVP.Promise((resolve, reject) => {
-      let data = {
-        type: 'base64',
-        image: fileBase64
-      };
-
-      request.post(
-        'https://api.imgur.com/3/image',
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Client-ID ' + imgurClientID
-          },
-          json: data
+    return await request.post(
+      'https://api.imgur.com/3/image', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Client-ID ' + imgurClientID
         },
-        (error, response, body) => {
-          if (!error && response.statusCode === 200) {
-            resolve(body.data.link);
-          } else {
-            console.error('Error sending data to imgur...');
-            console.error(body);
-            resolve(null); // We still want to resolve, as that is no reason to let the test error out
-          }
+        json: {
+          type: 'base64',
+          image: await fs.readFile(imagePath, { encoding: 'base64' })
         }
-      );
-    });
+      }).then((body) => {
+        return body.data.link;
+      }).catch((error) => {
+        console.error('Error sending data to imgur...');
+        console.error(error);
+      });
   },
 
   middleware(app) {
@@ -357,5 +339,4 @@ module.exports = {
   isDevelopingAddon() {
     return false;
   }
-
 };
