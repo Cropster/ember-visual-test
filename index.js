@@ -60,7 +60,11 @@ module.exports = {
     });
   },
 
-  _launchBrowser: async function() {
+  async _getBrowser() {
+    if (this.browser) {
+      return this.browser;
+    }
+
     let options = this.visualTest;
 
     let flags = [
@@ -72,7 +76,7 @@ module.exports = {
       noSandbox = true;
     }
 
-    const browser = new HeadlessChrome({
+    this.browser = new HeadlessChrome({
       headless: true,
       chrome: {
         flags,
@@ -91,10 +95,22 @@ module.exports = {
 
     // This is started while the app is building, so we can assume this will be ready
     this._debugLog('Starting chrome instance...');
-    await browser.init();
-    this._debugLog(`Chrome instance initialized with port=${browser.port}`);
+    await this.browser.init();
+    this._debugLog(`Chrome instance initialized with port=${this.browser.port}`);
 
-    return browser;
+    return this.browser;
+  },
+
+  async _getBrowserTab() {
+    const browser = await this._getBrowser();
+    const tab = await browser.newTab({ privateTab: false });
+
+    tab.onConsole((options) => {
+      let logValue = options.map((item) => item.value).join(' ');
+      this._debugLog(`Browser log: ${logValue}`);
+    });
+
+    return tab;
   },
 
   _imageLog(str) {
@@ -111,23 +127,17 @@ module.exports = {
 
   _makeScreenshots: async function(url, fileName, { selector, fullPage, delayMs }) {
     let options = this.visualTest;
-    let browser;
+    let tab;
 
     try {
-      browser = await this._launchBrowser();
+      tab = await this._getBrowserTab();
     } catch (e) {
       console.error('Error when launching browser!');
       console.error(e);
       return { newBaseline: false, newScreenshotUrl: null, chromeError: true };
     }
-    let tab = await browser.newTab({ privateTab: false });
 
     await tab.goTo(url);
-
-    tab.onConsole((options) => {
-      let logValue = options.map((item) => item.value).join(' ');
-      this._debugLog(`Browser log: ${logValue}`);
-    });
 
     // This is inserted into the DOM by the capture helper when everything is ready
     await tab.waitForSelectorToLoad('#visual-test-has-loaded', { interval: 100 });
@@ -159,11 +169,12 @@ module.exports = {
     await fs.outputFile(fullTmpPath, await tab.getScreenshot(screenshotOptions, true));
 
     try {
-      await browser.close();
-    } catch (e) {
-      console.error('Error closing the browser...');
+      await tab.close();
+    } catch(e) {
+      console.error('Error closing a tab...');
       console.error(e);
     }
+
     return { newBaseline, newScreenshotUrl };
   },
 
