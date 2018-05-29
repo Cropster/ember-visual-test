@@ -7,12 +7,12 @@ module.exports = function(defaults) {
     'ember-cli-babel': {
       includePolyfill: true
     },
-
     visualTest: {
       imageLogging: true,
       debugLogging: true,
       imgurClientId: '6331cc0a93af83c'
-    }
+    },
+    snippetSearchPaths: ['app', 'tests/acceptance']
   });
 
   /*

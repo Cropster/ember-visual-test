@@ -1,3 +1,4 @@
+// BEGIN-SNIPPET usage.js
 import { currentURL, visit } from '@ember/test-helpers';
 import { module, test } from 'qunit';
 import { setupApplicationTest } from 'ember-qunit';
@@ -13,6 +14,11 @@ module('Acceptance | visual test', function(hooks) {
 
     await capture(assert, 'visual-test');
   });
+});
+// END-SNIPPET
+
+module('Acceptance | visual test - subdirectories', function(hooks) {
+  setupApplicationTest(hooks);
 
   test('subdir path', async function(assert) {
     await visit('/visual-test-route');
