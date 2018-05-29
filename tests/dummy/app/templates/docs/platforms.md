@@ -1,4 +1,4 @@
-### Note on different platforms / CI
+# Note on different platforms / CI
 
 Sadly, the font rendering is slightly different on different platforms (Windows/Linux/MaxOS). 
 This can lead to comparison errors when comparing a baseline image generated on one platform, with one on another platform.

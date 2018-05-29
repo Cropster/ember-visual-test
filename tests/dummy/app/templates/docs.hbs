@@ -1,15 +1,18 @@
-{{docs-header}}
+{{docs-header name='ember-visual-test'}}
 
 {{#docs-viewer as |viewer|}}
 
   {{#viewer.nav as |nav|}}
-    {{nav.item 'Introduction' 'docs.index'}}
-    {{nav.item 'Usage' 'docs.usage'}}
+    {{nav.section 'Introduction'}}
+    {{nav.item 'Installation' 'docs.index'}}
     {{nav.item 'How does it work?' 'docs.how'}}
     {{nav.item 'Note on different platforms' 'docs.platforms'}}
-    {{nav.item 'Styles' 'docs.styles'}}
-    {{nav.item 'Technical explanation' 'docs.tech'}}
     {{nav.item 'Example' 'docs.example'}}
+
+    {{nav.section 'Advanced'}}
+    {{nav.item 'Styles' 'docs.styles'}}
+    {{nav.item 'ember-cli-mirage' 'docs.mirage'}}
+    {{nav.item 'Technical explanation' 'docs.tech'}}
   {{/viewer.nav}}
 
   {{#viewer.main}}

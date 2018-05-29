@@ -1,4 +1,4 @@
-## How does it work?
+# How does it work?
 
 Whenever `capture` is called in the test, the node server will make a screenshot with 
 [simple-headless-chrome](https://github.com/LucianoGanga/simple-headless-chrome), 

@@ -1,4 +1,4 @@
-### Example
+# Example
 
 For example, imagine you had an image like this the first time you ran the capture:
 

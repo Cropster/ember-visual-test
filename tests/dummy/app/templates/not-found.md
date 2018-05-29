@@ -1,3 +1,5 @@
+{{docs-header name='ember-visual-test'}}
+
 <div class="docs-container">
   <h1>Not found</h1>
   <p>This page doesn't exist. {{#link-to 'index'}}Head home?{{/link-to}}</p>

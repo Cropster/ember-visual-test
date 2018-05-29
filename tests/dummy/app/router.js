@@ -8,9 +8,9 @@ const Router = AddonDocsRouter.extend({
 
 Router.map(function() {
   this.route('interactive');
+  this.route('visual-test-route');
 
   docsRoute(this, function () {
-    this.route('usage');
     this.route('how');
     this.route('mirage');
     this.route('platforms');

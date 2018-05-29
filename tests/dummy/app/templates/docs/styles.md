@@ -1,4 +1,4 @@
-### Styling
+# Styling
 
 When running in capture mode (in node), the `capture` helper will automatically add a class 
 `visual-test-capture-mode` to the body. Styles are injected when running tests that use that 

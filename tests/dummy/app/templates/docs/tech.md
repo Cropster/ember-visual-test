@@ -1,4 +1,4 @@
-## Technical explanation
+# Technical explanation
 
 This is how this addon actually works:
 
