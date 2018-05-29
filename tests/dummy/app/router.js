@@ -17,6 +17,8 @@ Router.map(function() {
     this.route('styles');
     this.route('tech');
     this.route('example');
+    this.route('build');
+    this.route('cli');
     this.route('not-found', { path: '/*path' });
   });
 });

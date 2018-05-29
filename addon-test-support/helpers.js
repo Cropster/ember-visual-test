@@ -2,19 +2,19 @@ import { dasherize } from '@ember/string';
 import RSVP from 'rsvp';
 
 /**
-  capture test helper
-
   ```js
   await capture(assert, 'uniqueName');
   ```
 
+  This works in both acceptance tests as well as in integration tests.
+
   @function capture
-  @param {Object} assert assert function from your test module
-  @param {string} fileName should be globaly unique
-  @param {Object} [options]
-  @param {string} [options.selector] CSS selector
-  @param {boolean} [options.fullPage] should full page or just viewport
-  @param {integer} [options.delayMs] how many ms to wait after opening a page before doing a screenshot
+  @param {Object} assert The assert function. This assumes you are using qunit.
+  @param {string} fileName  A unique string to identify this capture. This will be the file name of the generated images, and has to be unique across your whole application. If it contains '/', subdirectories will be created so you can group baseline images.
+  @param {Object} [options] An optional object with options. The following options are allowed:
+  @param {string} [options.selector] An optional selector to screenshot. If not specified, the whole page will be captured.
+  @param {boolean} [options.fullPage] If a full page screenshot should be made, or just the browsers viewport. Defaults to `true`
+  @param {integer} [options.delayMs] Delay (in milliseconds) before taking the screenshot. Useful when you need to wait for CSS transitions, etc. Defaults to `100`.
 
   @returns {Promise}
 
