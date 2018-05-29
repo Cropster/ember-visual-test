@@ -1,6 +1,24 @@
 import { dasherize } from '@ember/string';
 import RSVP from 'rsvp';
 
+/**
+  capture test helper
+
+  ```js
+  await capture(assert, 'uniqueName');
+  ```
+
+  @function capture
+  @param {Object} assert assert function from your test module
+  @param {string} fileName should be globaly unique
+  @param {Object} [options]
+  @param {string} [options.selector] CSS selector
+  @param {boolean} [options.fullPage] should full page or just viewport
+  @param {integer} [options.delayMs] how many ms to wait after opening a page before doing a screenshot
+
+  @returns {Promise}
+
+*/
 export async function capture(assert, fileName, { selector = null, fullPage = true, delayMs = 100 } = {}) {
   let testId = assert.test.testId;
 
