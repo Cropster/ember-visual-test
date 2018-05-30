@@ -1,5 +1,5 @@
 import BaseProject from 'ember-cli-addon-docs/models/project';
-import { get, set, observer } from '@ember/object';
+import { get, observer } from '@ember/object';
 import fixWindowsPath from 'dummy/utils/fix-windows-path';
 
 export default BaseProject.extend({

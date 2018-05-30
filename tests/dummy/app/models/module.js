@@ -1,5 +1,5 @@
 import BaseModule from 'ember-cli-addon-docs/models/module';
-import { get, set } from '@ember/object';
+import { get } from '@ember/object';
 import fixWindowsPath from 'dummy/utils/fix-windows-path';
 
 export default BaseModule.extend({
