@@ -12,7 +12,12 @@ module.exports = function(defaults) {
       debugLogging: true,
       imgurClientId: '6331cc0a93af83c'
     },
-    snippetSearchPaths: ['app', 'tests/acceptance']
+    fingerprint: {
+      exclude: [
+        'docs/images/**'
+      ]
+    },
+    snippetSearchPaths: ['app', 'tests/acceptance', 'addon-test-support']
   });
 
   /*
