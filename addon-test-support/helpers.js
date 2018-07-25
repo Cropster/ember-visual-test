@@ -21,7 +21,7 @@ import RSVP from 'rsvp';
  * @param {integer} [options.delayMs] Delay (in milliseconds) before taking the screenshot. Useful when you need to wait for CSS transitions, etc. Defaults to `100`.
  * @return {Promise}
  */
-export async function capture(assert, fileName, { selector = null, fullPage = true, delayMs = 100 } = {}) {
+export async function capture(assert, fileName, { selector = null, fullPage = true, delayMs = null } = {}) {
   let testId = assert.test.testId;
 
   let queryParamString = window.location.search.substr(1);
