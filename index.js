@@ -31,7 +31,8 @@ module.exports = {
     chromePort: 0,
     windowWidth: 1024,
     windowHeight: 768,
-    noSandbox: false
+    noSandbox: false,
+    defaultDelayMs: 100
   },
 
   included(app) {
@@ -129,6 +130,10 @@ module.exports = {
     let options = this.visualTest;
     let tab;
 
+    if (!delayMs) {
+      delayMs = options.defaultDelayMs;
+    }
+
     try {
       tab = await this._getBrowserTab();
     } catch (e) {
@@ -146,8 +151,10 @@ module.exports = {
 
     let screenshotOptions = { selector, fullPage };
 
-    // To avoid problems...
-    await tab.wait(delayMs);
+    if (delayMs > 0) {
+      // To avoid problems...
+      await tab.wait(delayMs);
+    }
 
     // only if the file does not exist, or if we force to save, do we write the actual images themselves
     let newScreenshotUrl = null;
@@ -268,7 +275,7 @@ module.exports = {
       let fileName = this._getFileName(req.body.name);
       let selector = req.body.selector;
       let fullPage = req.body.fullPage || false;
-      let delayMs = req.body.delayMs ? parseInt(req.body.delayMs) : 100;
+      let delayMs = req.body.delayMs ? parseInt(req.body.delayMs) : null;
 
       if (fullPage === 'true') {
         fullPage = true;
