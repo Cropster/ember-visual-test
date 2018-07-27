@@ -18,7 +18,8 @@ import RSVP from 'rsvp';
  * @param {Object} [options] An optional object with options. The following options are allowed:
  * @param {string} [options.selector] An optional selector to screenshot. If not specified, the whole page will be captured.
  * @param {boolean} [options.fullPage] If a full page screenshot should be made, or just the browsers viewport. Defaults to `true`
- * @param {integer} [options.delayMs] Delay (in milliseconds) before taking the screenshot. Useful when you need to wait for CSS transitions, etc. Defaults to `100`.
+ * @param {integer} [options.delayMs] Delay (in milliseconds) before taking the screenshot. Useful when you need to wait for CSS transitions, etc. Defaults to the configuration option `defaultDelayMs`.
+ *
  * @return {Promise}
  */
 export async function capture(assert, fileName, { selector = null, fullPage = true, delayMs = null } = {}) {
