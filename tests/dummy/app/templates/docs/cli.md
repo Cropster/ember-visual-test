@@ -1,6 +1,6 @@
 # CLI
 
-There are also two CLI commands to use:
+There are also three CLI commands to use:
 
 * `ember visual-test:approve`: Make changed images the new baseline
 * `ember visual-test:clean`: Clean the diff/tmp folders

@@ -17,4 +17,4 @@ and run tests to generate new screenshot,
 - manually move the image from the `/visual-test-output/tmp` folder to
 the `/visual-test-output/baseline` folder,
 - run `ember visual-test:reset` to delete and recreate _all images_,
-- run `ember visual-test:approve` to make _all changed images_ a new baeline.
+- run `ember visual-test:approve` to make _all changed images_ a new baseline.
