@@ -10,7 +10,12 @@ module.exports = function(defaults) {
     visualTest: {
       imageLogging: true,
       debugLogging: true,
-      imgurClientId: '6331cc0a93af83c'
+      imgurClientId: '6331cc0a93af83c',
+      modes: {
+        mobile: {
+          windowWidth: 412
+        }
+      }
     },
     fingerprint: {
       exclude: [
