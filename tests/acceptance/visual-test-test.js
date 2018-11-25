@@ -13,6 +13,8 @@ module('Acceptance | visual test', function(hooks) {
     assert.equal(currentURL(), '/visual-test-route');
 
     await capture(assert, 'visual-test');
+
+    await capture(assert, 'visual-test', { mode: 'mobile' });
   });
 });
 // END-SNIPPET

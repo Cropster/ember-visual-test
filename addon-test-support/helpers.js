@@ -21,7 +21,7 @@ import RSVP from 'rsvp';
  * @param {integer} [options.delayMs] Delay (in milliseconds) before taking the screenshot. Useful when you need to wait for CSS transitions, etc. Defaults to `100`.
  * @return {Promise}
  */
-export async function capture(assert, fileName, { selector = null, fullPage = true, delayMs = 100 } = {}) {
+export async function capture(assert, fileName, { selector = null, fullPage = true, delayMs = 100, mode = null } = {}) {
   let testId = assert.test.testId;
 
   let queryParamString = window.location.search.substr(1);
@@ -53,12 +53,12 @@ export async function capture(assert, fileName, { selector = null, fullPage = tr
   ];
 
   let url = `${window.location.protocol}//${window.location.host}${window.location.pathname}?${urlQueryParams.join('&')}`;
-  let response = await requestCapture(url, fileName, { selector, fullPage, delayMs });
+  let response = await requestCapture(url, fileName, { selector, fullPage, delayMs, mode });
 
   if (response.status === 'SUCCESS') {
-    assert.ok(true, `visual-test: ${fileName} has not changed`);
+    assert.ok(true, `visual-test: ${fileName} (${mode || 'default'}) has not changed`);
   } else {
-    assert.ok(false, `visual-test: ${fileName} has changed: ${response.error}`);
+    assert.ok(false, `visual-test: ${fileName} (${mode || 'default'}) has changed: ${response.error}`);
   }
 
   return response;
@@ -79,7 +79,7 @@ export function prepareCaptureMode() {
   }
 }
 
-export async function requestCapture(url, fileName, { selector, fullPage, delayMs }) {
+export async function requestCapture(url, fileName, { selector, fullPage, delayMs, mode }) {
   // If not in capture mode, make a request to the middleware to capture a screenshot in node
   fileName = dasherize(fileName);
 
@@ -88,7 +88,8 @@ export async function requestCapture(url, fileName, { selector, fullPage, delayM
     name: fileName,
     selector,
     fullPage,
-    delayMs
+    delayMs,
+    mode
   };
 
   return await ajaxPost('/visual-test/make-screenshot', data, 'application/json');

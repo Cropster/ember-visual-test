@@ -31,7 +31,8 @@ module.exports = {
     chromePort: 0,
     windowWidth: 1024,
     windowHeight: 768,
-    noSandbox: false
+    noSandbox: false,
+    modes: {}
   },
 
   included(app) {
@@ -39,6 +40,9 @@ module.exports = {
     this._ensureThisImport();
 
     let options = Object.assign({}, this.visualTest, app.options.visualTest);
+    Object.entries(options.modes).forEach(([name, modeOptions]) => {
+      options.modes[name] = Object.assign({}, options, { modes: undefined }, modeOptions);
+    });
     this._debugLog('Setting up ember-visual-test...');
 
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
@@ -60,12 +64,25 @@ module.exports = {
     });
   },
 
-  async _getBrowser() {
-    if (this.browser) {
-      return this.browser;
+  _getOptions(mode) {
+    if (mode) {
+      if (this.visualTest.modes[mode]) {
+        return this.visualTest.modes[mode];
+      } else {
+        console.error(`Mode '${mode}' not found. Please define it in your ember-cli-build.js`);
+      }
+    } else {
+      return this.visualTest;
+    }
+  },
+
+  async _getBrowser(mode) {
+    this.browsers = this.browsers || {};
+    if (this.browsers[mode]) {
+      return this.browsers[mode];
     }
 
-    let options = this.visualTest;
+    let options = this._getOptions(mode);
 
     let flags = [
       '--enable-logging'
@@ -76,7 +93,7 @@ module.exports = {
       noSandbox = true;
     }
 
-    this.browser = new HeadlessChrome({
+    this.browsers[mode] = new HeadlessChrome({
       headless: true,
       chrome: {
         flags,
@@ -94,43 +111,43 @@ module.exports = {
     });
 
     // This is started while the app is building, so we can assume this will be ready
-    this._debugLog('Starting chrome instance...');
-    await this.browser.init();
-    this._debugLog(`Chrome instance initialized with port=${this.browser.port}`);
+    this._debugLog('Starting chrome instance...', mode);
+    await this.browsers[mode].init();
+    this._debugLog(`Chrome instance initialized with port=${this.browsers[mode].port}`, mode);
 
-    return this.browser;
+    return this.browsers[mode];
   },
 
-  async _getBrowserTab() {
-    const browser = await this._getBrowser();
+  async _getBrowserTab(mode) {
+    const browser = await this._getBrowser(mode);
     const tab = await browser.newTab({ privateTab: false });
 
     tab.onConsole((options) => {
       let logValue = options.map((item) => item.value).join(' ');
-      this._debugLog(`Browser log: ${logValue}`);
+      this._debugLog(`Browser log: ${logValue}`, mode);
     });
 
     return tab;
   },
 
-  _imageLog(str) {
-    if (this.visualTest.imageLogging) {
+  _imageLog(str, mode) {
+    if (this._getOptions(mode).imageLogging) {
       console.log(str);
     }
   },
 
-  _debugLog(str) {
-    if (this.visualTest.debugLogging) {
+  _debugLog(str, mode) {
+    if (this._getOptions(mode).debugLogging) {
       console.log(str);
     }
   },
 
-  _makeScreenshots: async function(url, fileName, { selector, fullPage, delayMs }) {
-    let options = this.visualTest;
+  _makeScreenshots: async function(url, fileName, { selector, fullPage, delayMs, mode }) {
+    let options = this._getOptions(mode);
     let tab;
 
     try {
-      tab = await this._getBrowserTab();
+      tab = await this._getBrowserTab(mode);
     } catch (e) {
       console.error('Error when launching browser!');
       console.error(e);
@@ -153,19 +170,19 @@ module.exports = {
     let newScreenshotUrl = null;
     let newBaseline = options.forceBuildVisualTestImages || !fs.existsSync(fullPath);
     if (newBaseline) {
-      this._imageLog(`Making base screenshot ${fileName}`);
+      this._imageLog(`Making base screenshot ${fileName}`, mode);
 
       await fs.outputFile(fullPath, await tab.getScreenshot(screenshotOptions, true));
 
-      newScreenshotUrl = await this._tryUploadToImgur(fullPath);
+      newScreenshotUrl = await this._tryUploadToImgur(fullPath, mode);
       if (newScreenshotUrl) {
-        this._imageLog(`New screenshot can be found under ${newScreenshotUrl}`);
+        this._imageLog(`New screenshot can be found under ${newScreenshotUrl}`, mode);
       }
     }
 
     // Always make the tmp screenshot
     let fullTmpPath = `${path.join(options.imageTmpDirectory, fileName)}.png`;
-    this._imageLog(`Making comparison screenshot ${fileName}`);
+    this._imageLog(`Making comparison screenshot ${fileName}`, mode);
     await fs.outputFile(fullTmpPath, await tab.getScreenshot(screenshotOptions, true));
 
     try {
@@ -178,8 +195,8 @@ module.exports = {
     return { newBaseline, newScreenshotUrl };
   },
 
-  _compareImages(fileName) {
-    let options = this.visualTest;
+  _compareImages(fileName, mode) {
+    let options = this._getOptions(mode);
     let _this = this;
 
     if (!fileName.includes('.png')) {
@@ -214,8 +231,8 @@ module.exports = {
         await fs.outputFile(diffPath, PNG.sync.write(diff));
 
         RSVP.all([
-          _this._tryUploadToImgur(imgPath),
-          _this._tryUploadToImgur(diffPath)
+          _this._tryUploadToImgur(imgPath, mode),
+          _this._tryUploadToImgur(diffPath, mode)
         ]).then(([urlTmp, urlDiff]) => {
           reject({
             errorPixelCount,
@@ -228,8 +245,8 @@ module.exports = {
     });
   },
 
-  _tryUploadToImgur: async function(imagePath) {
-    let imgurClientID = this.visualTest.imgurClientId;
+  _tryUploadToImgur: async function(imagePath, mode) {
+    let imgurClientID = this._getOptions(mode).imgurClientId;
 
     if (!imgurClientID) {
       return RSVP.resolve(null);
@@ -265,7 +282,8 @@ module.exports = {
 
     app.post('/visual-test/make-screenshot', (req, res) => {
       let url = req.body.url;
-      let fileName = this._getFileName(req.body.name);
+      let mode = req.body.mode;
+      let fileName = this._getFileName(req.body.name, mode);
       let selector = req.body.selector;
       let fullPage = req.body.fullPage || false;
       let delayMs = req.body.delayMs ? parseInt(req.body.delayMs) : 100;
@@ -278,11 +296,11 @@ module.exports = {
       }
 
       let data = {};
-      this._makeScreenshots(url, fileName, { selector, fullPage, delayMs }).then(({ newBaseline, newScreenshotUrl }) => {
+      this._makeScreenshots(url, fileName, { selector, fullPage, delayMs, mode }).then(({ newBaseline, newScreenshotUrl }) => {
         data.newScreenshotUrl = newScreenshotUrl;
         data.newBaseline = newBaseline;
 
-        return this._compareImages(fileName);
+        return this._compareImages(fileName, mode);
       }).then(() => {
         data.status = 'SUCCESS';
         res.send(data);
@@ -331,19 +349,26 @@ module.exports = {
     }
   },
 
-  _getFileName(fileName) {
-    let options = this.visualTest;
+  _getFileName(fileName, mode) {
+    let options = this._getOptions(mode);
 
-    if (options.groupByOs) {
-      let os = options.os;
+    if (options.groupByOs || mode) {
+      let os = options.groupByOs ? this.visualTest.os : null;
 
       const filePath = path.parse(fileName);
 
-      filePath.name = `${os}-${filePath.name}`;
+      if (os) {
+        filePath.name = `${os}-${filePath.name}`;
+      }
+      if (mode) {
+        filePath.name = `${filePath.name}-${mode}`;
+      }
+
       delete filePath.base;
 
       return path.format(filePath);
     }
+
     return fileName;
   },
 
