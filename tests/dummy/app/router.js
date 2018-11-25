@@ -13,6 +13,7 @@ Router.map(function() {
   docsRoute(this, function () {
     this.route('how');
     this.route('mirage');
+    this.route('modes');
     this.route('platforms');
     this.route('styles');
     this.route('tech');

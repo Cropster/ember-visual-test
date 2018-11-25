@@ -11,7 +11,8 @@ let app = new EmberAddon(defaults, {
    debugLogging: false, // If console messages from headless chrome should be printed in the console
    imgurClientId: null, // If set to a client ID of imgur, images will be uploaded there as well, to debug images e.g. on CI
    groupByOs: true, // If one set of images should be created/compared by OS
-   noSandbox: false // This may need to be set to true depending on your environment e.g. in CI 
+   noSandbox: false // This may need to be set to true depending on your environment e.g. in CI
+   modes: {} // Modes configuration - learn more in the modes section
   }
 });
 ```
