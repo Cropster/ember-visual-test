@@ -33,7 +33,8 @@ module.exports = {
     chromePort: 0,
     windowWidth: 1024,
     windowHeight: 768,
-    noSandbox: false
+    noSandbox: false,
+    hideScrollbars: false
   },
 
   included(app) {
@@ -72,6 +73,11 @@ module.exports = {
     let flags = [
       '--enable-logging'
     ];
+
+    let hideScrollbars = options.hideScrollbars;
+    if (hideScrollbars) {
+      flags.push('--hide-scrollbars');
+    }
 
     let noSandbox = options.noSandbox;
     if (process.env.TRAVIS || process.env.CIRCLECI) {
