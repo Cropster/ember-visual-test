@@ -3,16 +3,18 @@
 const commands = require('./lib/commands');
 const path = require('path');
 const fs = require('fs-extra');
-const bodyParser = require('body-parser');
-const { PNG } = require('pngjs');
 const pixelmatch = require('pixelmatch');
-const RSVP = require('rsvp');
 const HeadlessChrome = require('simple-headless-chrome');
 const request = require('request-promise-native');
 const os = require('os');
 
+/* eslint-disable node/no-extraneous-require */
+const bodyParser = require('body-parser');
+const { PNG } = require('pngjs');
+/* eslint-enable node/no-extraneous-require */
+
 module.exports = {
-  name: 'ember-visual-test',
+  name: require('./package').name,
 
   // The base settings
   // This can be overwritten
@@ -115,13 +117,13 @@ module.exports = {
 
   _imageLog(str) {
     if (this.visualTest.imageLogging) {
-      console.log(str);
+      log(str);
     }
   },
 
   _debugLog(str) {
     if (this.visualTest.debugLogging) {
-      console.log(str);
+      log(str);
     }
   },
 
@@ -132,8 +134,8 @@ module.exports = {
     try {
       tab = await this._getBrowserTab();
     } catch (e) {
-      console.error('Error when launching browser!');
-      console.error(e);
+      logError('Error when launching browser!');
+      logError(e);
       return { newBaseline: false, newScreenshotUrl: null, chromeError: true };
     }
 
@@ -171,8 +173,8 @@ module.exports = {
     try {
       await tab.close();
     } catch(e) {
-      console.error('Error closing a tab...');
-      console.error(e);
+      logError('Error closing a tab...');
+      logError(e);
     }
 
     return { newBaseline, newScreenshotUrl };
@@ -189,7 +191,7 @@ module.exports = {
     let baselineImgPath = path.join(options.imageDirectory, fileName);
     let imgPath = path.join(options.imageTmpDirectory, fileName);
 
-    return new RSVP.Promise(async function(resolve, reject) {
+    return new Promise(async function(resolve, reject) {
       let baseImg = fs.createReadStream(baselineImgPath).pipe(new PNG()).on('parsed', doneReading);
       let tmpImg = fs.createReadStream(imgPath).pipe(new PNG()).on('parsed', doneReading);
       let filesRead = 0;
@@ -213,7 +215,7 @@ module.exports = {
 
         await fs.outputFile(diffPath, PNG.sync.write(diff));
 
-        RSVP.all([
+        Promise.all([
           _this._tryUploadToImgur(imgPath),
           _this._tryUploadToImgur(diffPath)
         ]).then(([urlTmp, urlDiff]) => {
@@ -232,7 +234,7 @@ module.exports = {
     let imgurClientID = this.visualTest.imgurClientId;
 
     if (!imgurClientID) {
-      return RSVP.resolve(null);
+      return Promise.resolve(null);
     }
 
     return await request.post(
@@ -248,8 +250,8 @@ module.exports = {
       }).then((body) => {
         return body.data.link;
       }).catch((error) => {
-        console.error('Error sending data to imgur...');
-        console.error(error);
+        logError('Error sending data to imgur...');
+        logError(error);
       });
   },
 
@@ -351,3 +353,13 @@ module.exports = {
     return false;
   }
 };
+
+function log() {
+  // eslint-disable-next-line no-console
+  console.log(...arguments);
+}
+
+function logError() {
+  // eslint-disable-next-line no-console
+  console.error(...arguments);
+}
