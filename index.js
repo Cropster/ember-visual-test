@@ -127,7 +127,7 @@ module.exports = {
     }
   },
 
-  _makeScreenshots: async function(url, fileName, { selector, fullPage, delayMs }) {
+  async _makeScreenshots(url, fileName, { selector, fullPage, delayMs }) {
     let options = this.visualTest;
     let tab;
 
@@ -191,6 +191,7 @@ module.exports = {
     let baselineImgPath = path.join(options.imageDirectory, fileName);
     let imgPath = path.join(options.imageTmpDirectory, fileName);
 
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async function(resolve, reject) {
       let baseImg = fs.createReadStream(baselineImgPath).pipe(new PNG()).on('parsed', doneReading);
       let tmpImg = fs.createReadStream(imgPath).pipe(new PNG()).on('parsed', doneReading);
@@ -230,7 +231,7 @@ module.exports = {
     });
   },
 
-  _tryUploadToImgur: async function(imagePath) {
+  async _tryUploadToImgur(imagePath) {
     let imgurClientID = this.visualTest.imgurClientId;
 
     if (!imgurClientID) {
@@ -303,16 +304,16 @@ module.exports = {
     });
   },
 
-  testemMiddleware: function(app) {
+  testemMiddleware(app) {
     this.middleware(app);
   },
 
-  serverMiddleware: function(options) {
+  serverMiddleware(options) {
     this.app = options.app;
     this.middleware(options.app);
   },
 
-  includedCommands: function() {
+  includedCommands() {
     return commands;
   },
 
