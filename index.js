@@ -37,7 +37,7 @@ module.exports = {
   },
 
   included(app) {
-    this._super.included(app);
+    this._super.included.apply(this, ...arguments);
     this._ensureThisImport();
 
     let options = Object.assign({}, this.visualTest, app.options.visualTest);
