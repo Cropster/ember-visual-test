@@ -9,12 +9,19 @@ nav {
   line-height: 1.625
 }
 
+body {
+  background: white !important;
+}
+
 /* TEST SPECIFIC */
 
 .test-route {
   font-family: Arial, sans-serif;
   color: black;
   padding: 10px;
+  line-height: normal;
+  -webkit-font-smoothing: initial;
+  -moz-osx-font-smoothing: initial;
 }
 
 .test-route h1 {
