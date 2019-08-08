@@ -12,7 +12,7 @@ let app = new EmberAddon(defaults, {
    imgurClientId: null, // If set to a client ID of imgur, images will be uploaded there as well, to debug images e.g. on CI
    groupByOs: true, // If one set of images should be created/compared by OS
    noSandbox: false // This may need to be set to true depending on your environment e.g. in CI
-   chromeFlags: false // Flags used when launching headless chrome
+   chromeFlags: [] // Flags used when launching headless chrome
   }
 });
 ```

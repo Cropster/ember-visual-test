@@ -70,7 +70,8 @@ module.exports = {
 
     let options = this.visualTest;
 
-    let flags = options.chromeFlags;
+    // ensure only strings are used as flags
+    let flags = options.chromeFlags.filter(flag => typeof flag === 'string' && flag);
     if (!flags.includes('--enable-logging')) {
       flags.push('--enable-logging');
     }
