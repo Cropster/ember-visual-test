@@ -34,7 +34,7 @@ module.exports = {
     windowWidth: 1024,
     windowHeight: 768,
     noSandbox: false,
-    hideScrollbars: false
+    chromeFlags: []
   },
 
   included(app) {
@@ -70,13 +70,9 @@ module.exports = {
 
     let options = this.visualTest;
 
-    let flags = [
-      '--enable-logging'
-    ];
-
-    let hideScrollbars = options.hideScrollbars;
-    if (hideScrollbars) {
-      flags.push('--hide-scrollbars');
+    let flags = options.chromeFlags;
+    if (!flags.includes('--enable-logging')) {
+      flags.push('--enable-logging');
     }
 
     let noSandbox = options.noSandbox;
