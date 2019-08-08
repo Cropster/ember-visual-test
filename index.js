@@ -33,7 +33,8 @@ module.exports = {
     chromePort: 0,
     windowWidth: 1024,
     windowHeight: 768,
-    noSandbox: false
+    noSandbox: false,
+    chromeFlags: []
   },
 
   included(app) {
@@ -69,9 +70,11 @@ module.exports = {
 
     let options = this.visualTest;
 
-    let flags = [
-      '--enable-logging'
-    ];
+    // ensure only strings are used as flags
+    let flags = options.chromeFlags.filter(flag => typeof flag === 'string' && flag);
+    if (!flags.includes('--enable-logging')) {
+      flags.push('--enable-logging');
+    }
 
     let noSandbox = options.noSandbox;
     if (process.env.TRAVIS || process.env.CIRCLECI) {
