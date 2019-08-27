@@ -6,6 +6,7 @@
 /bower_components/
 
 # misc
+/.idea
 /.bowerrc
 /.editorconfig
 /.ember-cli
@@ -25,10 +26,12 @@
 /yarn.lock
 .gitkeep
 
-visual-test-oputput
+/visual-test-output/
 
 # ember-try
 .node_modules.ember-try/
 bower.json.ember-try
 package.json.ember-try
 /config/addon-docs.js
+/config/deploy.js
+/config/release.js
