@@ -25,6 +25,7 @@
 /tests/
 /yarn.lock
 .gitkeep
+.yarnrc
 
 /visual-test-output/
 
