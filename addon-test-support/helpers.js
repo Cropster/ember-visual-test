@@ -45,6 +45,12 @@ export async function capture(assert, fileName, { selector = null, fullPage = tr
     });
   }
 
+  // if skipvisual QUnit param is true, do nothing
+  if (queryParams.includes('skipvisual')) {
+    assert.ok(true, `visual-test: ${fileName} skipped`);
+    return;
+  }
+
   // If not in capture mode, make a request to the middleware to capture a screenshot in node
   let urlQueryParams = [
     `testId=${testId}`,

@@ -61,6 +61,11 @@ module.exports = {
     this.import('vendor/visual-test.css', {
       type: 'test'
     });
+
+    this.import('vendor/qunit/qunit.js', { type: 'test' });
+    this.import('vendor/ember-visual-test/qunit-configuration.js', {
+      type: 'test'
+    });
   },
 
   async _getBrowser() {
