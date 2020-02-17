@@ -63,7 +63,7 @@ module.exports = {
     });
   },
 
-  async _getBrowser() {
+  async _getBrowser({ windowWidth, windowHeight }) {
     if (this.browser) {
       return this.browser;
     }
@@ -74,6 +74,10 @@ module.exports = {
     let flags = options.chromeFlags.filter(flag => typeof flag === 'string' && flag);
     if (!flags.includes('--enable-logging')) {
       flags.push('--enable-logging');
+    }
+
+    if (!flags.includes('--start-maximized')) {
+      flags.push('--start-maximized');
     }
 
     let noSandbox = options.noSandbox;
@@ -90,8 +94,8 @@ module.exports = {
         noSandbox
       },
       deviceMetrics: {
-        width: options.windowWidth,
-        height: options.windowHeight,
+        width: windowWidth || options.windowWidth,
+        height: windowHeight || options.windowHeight,
       },
       browser: {
         browserLog: options.debugLogging
@@ -106,8 +110,8 @@ module.exports = {
     return this.browser;
   },
 
-  async _getBrowserTab() {
-    const browser = await this._getBrowser();
+  async _getBrowserTab({ windowWidth, windowHeight }) {
+    const browser = await this._getBrowser({ windowWidth, windowHeight });
     const tab = await browser.newTab({ privateTab: false });
 
     tab.onConsole((options) => {
@@ -130,12 +134,12 @@ module.exports = {
     }
   },
 
-  async _makeScreenshots(url, fileName, { selector, fullPage, delayMs }) {
+  async _makeScreenshots(url, fileName, { selector, fullPage, delayMs, windowWidth, windowHeight }) {
     let options = this.visualTest;
     let tab;
 
     try {
-      tab = await this._getBrowserTab();
+      tab = await this._getBrowserTab({ windowWidth, windowHeight });
     } catch (e) {
       logError('Error when launching browser!');
       logError(e);
@@ -143,6 +147,7 @@ module.exports = {
     }
 
     await tab.goTo(url);
+     await tab.resizeFullScreen();
 
     // This is inserted into the DOM by the capture helper when everything is ready
     await tab.waitForSelectorToLoad('#visual-test-has-loaded', { interval: 100 });
@@ -275,6 +280,8 @@ module.exports = {
       let selector = req.body.selector;
       let fullPage = req.body.fullPage || false;
       let delayMs = req.body.delayMs ? parseInt(req.body.delayMs) : 100;
+      let windowHeight = req.body.windowHeight ? parseInt(req.body.windowHeight) : null;
+      let windowWidth = req.body.windowWidth ? parseInt(req.body.windowWidth) : null;
 
       if (fullPage === 'true') {
         fullPage = true;
@@ -284,7 +291,16 @@ module.exports = {
       }
 
       let data = {};
-      this._makeScreenshots(url, fileName, { selector, fullPage, delayMs }).then(({ newBaseline, newScreenshotUrl }) => {
+      this._makeScreenshots(url, fileName, {
+        selector,
+        fullPage,
+        delayMs,
+        windowWidth,
+        windowHeight
+      }).then(({
+        newBaseline,
+        newScreenshotUrl
+      }) => {
         data.newScreenshotUrl = newScreenshotUrl;
         data.newBaseline = newBaseline;
 
