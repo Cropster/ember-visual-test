@@ -223,9 +223,6 @@ module.exports = {
         fs.mkdirSync(options.comparTmpDirectory);
       }
 
-      fs.createReadStream(baselineImgPath).pipe(new PNG());
-      fs.createReadStream(imgPath).pipe(new PNG());
-
       fs.copyFileSync(baselineImgPath, savebaselineImgPath, fs.constants.COPYFILE_FICLONE);
       fs.copyFileSync(imgPath, saveimgPath, fs.constants.COPYFILE_FICLONE);
 
@@ -279,7 +276,7 @@ module.exports = {
         if (fs.existsSync(options.comparImageDirectory)){
           fs.removeSync(options.comparImageDirectory);
         }
-        
+
         if (fs.existsSync(options.comparTmpDirectory)){
           fs.removeSync(options.comparTmpDirectory);
         }
