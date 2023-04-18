@@ -270,8 +270,8 @@ module.exports = {
           includeAA: options.includeAA
         });
 
-        fs.copyFileSync(savebaselineImgPath, baselineImgPath, fs.constants.COPYFILE_FICLONE);
-        fs.copyFileSync(saveimgPath, imgPath, fs.constants.COPYFILE_FICLONE);
+        fs.cpSync(savebaselineImgPath, baselineImgPath);
+        fs.cpSync(saveimgPath, imgPath);
         
         if (fs.existsSync(options.saveImageDirectory)){
           fs.removeSync(options.saveImageDirectory);
