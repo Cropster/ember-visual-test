@@ -23,8 +23,8 @@ module.exports = {
     imageDirectory: 'visual-test-output/baseline',
     imageDiffDirectory: 'visual-test-output/diff',
     imageTmpDirectory: 'visual-test-output/tmp',
-    comparImageDirectory: 'visual-test-output/baseline/saveBaseline',
-    comparTmpDirectory: 'visual-test-output/tmp/saveTmp',
+    saveImageDirectory: 'visual-test-output/baseline/saveBaseline',
+    saveTmpDirectory: 'visual-test-output/tmp/saveTmp',
     forceBuildVisualTestImages: false,
     imageMatchAllowedFailures: 0,
     imageMatchThreshold: 0.3,
@@ -198,8 +198,8 @@ module.exports = {
     let baselineImgPath = path.join(options.imageDirectory, fileName);
     let imgPath = path.join(options.imageTmpDirectory, fileName);
     
-    let savebaselineImgPath = path.join(options.comparImageDirectory, fileName);
-    let saveimgPath = path.join(options.comparTmpDirectory, fileName);
+    let savebaselineImgPath = path.join(options.saveImageDirectory, fileName);
+    let saveimgPath = path.join(options.saveTmpDirectory, fileName);
 
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async function(resolve, reject) {
@@ -215,12 +215,12 @@ module.exports = {
       const maximumWidth = Math.max(sharpBaseImgMetadata.width, sharpTmpImgMetadata.width);
       const maximumHeight = Math.max(sharpBaseImgMetadata.height, sharpTmpImgMetadata.height);
 
-      if (!fs.existsSync(options.comparImageDirectory)){
-        fs.mkdirSync(options.comparImageDirectory);
+      if (!fs.existsSync(options.saveImageDirectory)){
+        fs.mkdirSync(options.saveImageDirectory);
       }
 
-      if (!fs.existsSync(options.comparTmpDirectory)){
-        fs.mkdirSync(options.comparTmpDirectory);
+      if (!fs.existsSync(options.saveTmpDirectory)){
+        fs.mkdirSync(options.saveTmpDirectory);
       }
 
       fs.copyFileSync(baselineImgPath, savebaselineImgPath, fs.constants.COPYFILE_FICLONE);
@@ -273,12 +273,12 @@ module.exports = {
         fs.copyFileSync(savebaselineImgPath, baselineImgPath, fs.constants.COPYFILE_FICLONE);
         fs.copyFileSync(saveimgPath, imgPath, fs.constants.COPYFILE_FICLONE);
         
-        if (fs.existsSync(options.comparImageDirectory)){
-          fs.removeSync(options.comparImageDirectory);
+        if (fs.existsSync(options.saveImageDirectory)){
+          fs.removeSync(options.saveImageDirectory);
         }
 
-        if (fs.existsSync(options.comparTmpDirectory)){
-          fs.removeSync(options.comparTmpDirectory);
+        if (fs.existsSync(options.saveTmpDirectory)){
+          fs.removeSync(options.saveTmpDirectory);
         }
        
         if (errorPixelCount <= options.imageMatchAllowedFailures) {
