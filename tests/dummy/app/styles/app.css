@@ -15,16 +15,6 @@ body {
 
 /* TEST SPECIFIC */
 
-.test h1{
-  margin-top: 0;
-  background-color: grey;
-  border-radius: 20px;
-}
-
-.test p{
-  margin-bottom: 1em;
-}
-
 .test-route {
   font-family: Arial, sans-serif;
   color: black;
@@ -54,50 +44,3 @@ body {
   font-size: 1.1em;
 }
 
-.test .sbo-input-field{
-  border: none;
-  height: 100%;
-  width: 100%;
-  font-size: 14px;
-  background-color: transparent;
-  padding: 0;
-}
-
-.test .sbo-searchbar{
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding-inline: 5px;
-  gap: 10px;
-  color: black;
-  background-color: grey;
-  height: 350px;
-  width: 340px;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  box-sizing: border-box;
-}
-
-.sbo-input-field{
-  border: none;
-  height: 100%;
-  width: 100%;
-  font-size: 14px;
-  background-color: transparent;
-  padding: 0;
-}
-
-.sbo-searchbar{
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding-inline: 5px;
-  gap: 10px;
-  color: black;
-  background-color: grey;
-  height: 50px;
-  width: 340px;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  box-sizing: border-box;
-}
