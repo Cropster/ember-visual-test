@@ -223,8 +223,8 @@ module.exports = {
         fs.mkdirSync(options.saveTmpDirectory);
       }
 
-      fs.copyFileSync(baselineImgPath, savebaselineImgPath, fs.constants.COPYFILE_FICLONE);
-      fs.copyFileSync(imgPath, saveimgPath, fs.constants.COPYFILE_FICLONE);
+      fs.cpSync(baselineImgPath, savebaselineImgPath);
+      fs.cpSync(imgPath, saveimgPath);
 
       await sharpBaseImg
       .resize({
@@ -270,8 +270,8 @@ module.exports = {
           includeAA: options.includeAA
         });
 
-        fs.cpSync(savebaselineImgPath, baselineImgPath);
-        fs.cpSync(saveimgPath, imgPath);
+        fs.copyFileSync(savebaselineImgPath, baselineImgPath, fs.constants.COPYFILE_FICLONE);
+        fs.copyFileSync(saveimgPath, imgPath, fs.constants.COPYFILE_FICLONE);
         
         if (fs.existsSync(options.saveImageDirectory)){
           fs.removeSync(options.saveImageDirectory);
