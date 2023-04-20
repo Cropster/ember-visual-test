@@ -43,3 +43,9 @@ body {
 .text--alternate {
   font-size: 1.1em;
 }
+
+.test-resize{
+  border: solid;
+  border-radius: 30px;
+  height: 70em;
+}

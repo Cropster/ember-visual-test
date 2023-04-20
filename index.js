@@ -7,6 +7,7 @@ const pixelmatch = require('pixelmatch');
 const HeadlessChrome = require('simple-headless-chrome');
 const request = require('request-promise-native');
 const os = require('os');
+const sharp = require('sharp')
 
 /* eslint-disable node/no-extraneous-require */
 const bodyParser = require('body-parser');
@@ -22,6 +23,8 @@ module.exports = {
     imageDirectory: 'visual-test-output/baseline',
     imageDiffDirectory: 'visual-test-output/diff',
     imageTmpDirectory: 'visual-test-output/tmp',
+    saveImageDirectory: 'visual-test-output/baseline/saveBaseline',
+    saveTmpDirectory: 'visual-test-output/tmp/saveTmp',
     forceBuildVisualTestImages: false,
     imageMatchAllowedFailures: 0,
     imageMatchThreshold: 0.3,
@@ -184,6 +187,7 @@ module.exports = {
   },
 
   _compareImages(fileName) {
+
     let options = this.visualTest;
     let _this = this;
 
@@ -193,9 +197,55 @@ module.exports = {
 
     let baselineImgPath = path.join(options.imageDirectory, fileName);
     let imgPath = path.join(options.imageTmpDirectory, fileName);
+    
+    let savebaselineImgPath = path.join(options.saveImageDirectory, fileName);
+    let saveimgPath = path.join(options.saveTmpDirectory, fileName);
 
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async function(resolve, reject) {
+
+      const bufferBaseImg = fs.readFileSync(baselineImgPath);
+      const sharpBaseImg = sharp(bufferBaseImg);
+      const sharpBaseImgMetadata = await sharpBaseImg.metadata();
+
+      const bufferTmpImg = fs.readFileSync(imgPath);
+      const sharpTmpImg = sharp(bufferTmpImg);
+      const sharpTmpImgMetadata = await sharpTmpImg.metadata();
+
+      const maximumWidth = Math.max(sharpBaseImgMetadata.width, sharpTmpImgMetadata.width);
+      const maximumHeight = Math.max(sharpBaseImgMetadata.height, sharpTmpImgMetadata.height);
+
+      if (!fs.existsSync(options.saveImageDirectory)){
+        fs.mkdirSync(options.saveImageDirectory);
+      }
+
+      if (!fs.existsSync(options.saveTmpDirectory)){
+        fs.mkdirSync(options.saveTmpDirectory);
+      }
+
+      fs.cpSync(baselineImgPath, savebaselineImgPath);
+      fs.cpSync(imgPath, saveimgPath);
+
+      await sharpBaseImg
+      .resize({
+        width : maximumWidth,
+        height : maximumHeight,
+        fit: 'contain',
+        position: 'left top'
+      })
+      .png()
+      .toFile(baselineImgPath);
+
+      await sharpTmpImg
+      .resize({
+        width : maximumWidth,
+        height : maximumHeight,
+        fit: 'contain',
+        position: 'left top'
+      })
+      .png()
+      .toFile(imgPath);
+
       let baseImg = fs.createReadStream(baselineImgPath).pipe(new PNG()).on('parsed', doneReading);
       let tmpImg = fs.createReadStream(imgPath).pipe(new PNG()).on('parsed', doneReading);
       let filesRead = 0;
@@ -205,18 +255,38 @@ module.exports = {
           return;
         }
 
-        const diff = new PNG({ width: baseImg.width, height: baseImg.height });
-        const errorPixelCount = pixelmatch(baseImg.data, tmpImg.data, diff.data, baseImg.width, baseImg.height, {
+        const diff = new PNG({ 
+          width: maximumWidth,
+          height: maximumHeight
+        });
+
+        const errorPixelCount = pixelmatch(
+          baseImg.data,
+          tmpImg.data,
+          diff.data,
+          maximumWidth,
+          maximumHeight, {
           threshold: options.imageMatchThreshold,
           includeAA: options.includeAA
         });
 
+        fs.copyFileSync(savebaselineImgPath, baselineImgPath, fs.constants.COPYFILE_FICLONE);
+        fs.copyFileSync(saveimgPath, imgPath, fs.constants.COPYFILE_FICLONE);
+        
+        if (fs.existsSync(options.saveImageDirectory)){
+          fs.removeSync(options.saveImageDirectory);
+        }
+
+        if (fs.existsSync(options.saveTmpDirectory)){
+          fs.removeSync(options.saveTmpDirectory);
+        }
+       
         if (errorPixelCount <= options.imageMatchAllowedFailures) {
           return resolve();
         }
 
         let diffPath = path.join(options.imageDiffDirectory, fileName);
-
+        
         await fs.outputFile(diffPath, PNG.sync.write(diff));
 
         Promise.all([
