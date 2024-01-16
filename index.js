@@ -1,6 +1,3 @@
-'use strict';
-
-const commands = require('./lib/commands');
 const path = require('path');
 const fs = require('fs-extra');
 const pixelmatch = require('pixelmatch');
@@ -11,7 +8,10 @@ const os = require('os');
 /* eslint-disable node/no-extraneous-require */
 const bodyParser = require('body-parser');
 const { PNG } = require('pngjs');
+const commands = require('./lib/commands');
 /* eslint-enable node/no-extraneous-require */
+
+const IMAGE_SIZE_ERROR = 'Image sizes do not match.';
 
 module.exports = {
   name: require('./package').name,
@@ -34,14 +34,14 @@ module.exports = {
     windowWidth: 1024,
     windowHeight: 768,
     noSandbox: false,
-    chromeFlags: []
+    chromeFlags: [],
   },
 
   included(app) {
     this._super.included.apply(this, ...arguments);
     this._ensureThisImport();
 
-    let options = Object.assign({}, this.visualTest, app.options.visualTest);
+    let options = { ...this.visualTest, ...app.options.visualTest };
     this._debugLog('Setting up ember-visual-test...');
 
     options.forceBuildVisualTestImages = !!process.env.FORCE_BUILD_VISUAL_TEST_IMAGES;
@@ -59,7 +59,7 @@ module.exports = {
     options.os = osType;
 
     this.import('vendor/visual-test.css', {
-      type: 'test'
+      type: 'test',
     });
   },
 
@@ -76,7 +76,7 @@ module.exports = {
       flags.push('--enable-logging');
     }
 
-    let noSandbox = options.noSandbox;
+    let { noSandbox } = options;
     if (process.env.TRAVIS || process.env.CIRCLECI) {
       noSandbox = true;
     }
@@ -87,15 +87,15 @@ module.exports = {
         flags,
         port: options.port,
         userDataDir: null,
-        noSandbox
+        noSandbox,
       },
       deviceMetrics: {
         width: options.windowWidth,
         height: options.windowHeight,
       },
       browser: {
-        browserLog: options.debugLogging
-      }
+        browserLog: options.debugLogging,
+      },
     });
 
     // This is started while the app is building, so we can assume this will be ready
@@ -110,8 +110,8 @@ module.exports = {
     const browser = await this._getBrowser();
     const tab = await browser.newTab({ privateTab: false });
 
-    tab.onConsole((options) => {
-      let logValue = options.map((item) => item.value).join(' ');
+    tab.onConsole(options => {
+      let logValue = options.map(item => item.value).join(' ');
       this._debugLog(`Browser log: ${logValue}`);
     });
 
@@ -175,7 +175,7 @@ module.exports = {
 
     try {
       await tab.close();
-    } catch(e) {
+    } catch (e) {
       logError('Error closing a tab...');
       logError(e);
     }
@@ -195,7 +195,7 @@ module.exports = {
     let imgPath = path.join(options.imageTmpDirectory, fileName);
 
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async function(resolve, reject) {
+    return new Promise(async function (resolve, reject) {
       let baseImg = fs.createReadStream(baselineImgPath).pipe(new PNG()).on('parsed', doneReading);
       let tmpImg = fs.createReadStream(imgPath).pipe(new PNG()).on('parsed', doneReading);
       let filesRead = 0;
@@ -206,30 +206,39 @@ module.exports = {
         }
 
         const diff = new PNG({ width: baseImg.width, height: baseImg.height });
-        const errorPixelCount = pixelmatch(baseImg.data, tmpImg.data, diff.data, baseImg.width, baseImg.height, {
-          threshold: options.imageMatchThreshold,
-          includeAA: options.includeAA
-        });
-
-        if (errorPixelCount <= options.imageMatchAllowedFailures) {
-          return resolve();
-        }
-
-        let diffPath = path.join(options.imageDiffDirectory, fileName);
-
-        await fs.outputFile(diffPath, PNG.sync.write(diff));
-
-        Promise.all([
-          _this._tryUploadToImgur(imgPath),
-          _this._tryUploadToImgur(diffPath)
-        ]).then(([urlTmp, urlDiff]) => {
-          reject({
-            errorPixelCount,
-            allowedErrorPixelCount: options.imageMatchAllowedFailures,
-            diffPath: urlDiff || diffPath,
-            tmpPath: urlTmp || imgPath
+        try {
+          const errorPixelCount = pixelmatch(baseImg.data, tmpImg.data, diff.data, baseImg.width, baseImg.height, {
+            threshold: options.imageMatchThreshold,
+            includeAA: options.includeAA,
           });
-        }).catch(reject);
+
+          if (errorPixelCount <= options.imageMatchAllowedFailures) {
+            return resolve();
+          }
+
+          let diffPath = path.join(options.imageDiffDirectory, fileName);
+
+          await fs.outputFile(diffPath, PNG.sync.write(diff));
+
+          Promise.all([_this._tryUploadToImgur(imgPath), _this._tryUploadToImgur(diffPath)])
+            .then(([urlTmp, urlDiff]) => {
+              reject({
+                errorPixelCount,
+                allowedErrorPixelCount: options.imageMatchAllowedFailures,
+                diffPath: urlDiff || diffPath,
+                tmpPath: urlTmp || imgPath,
+              });
+            })
+            .catch(reject);
+        } catch (e) {
+          if (e.message !== IMAGE_SIZE_ERROR) console.error(e);
+          reject({
+            errorPixelCount: Math.abs((baseImg.data.length - tmpImg.data.length) / 4),
+            allowedErrorPixelCount: options.imageMatchAllowedFailures,
+            diffPath: null,
+            tmpPath: imgPath,
+          });
+        }
       }
     });
   },
@@ -241,38 +250,44 @@ module.exports = {
       return Promise.resolve(null);
     }
 
-    return await request.post(
-      'https://api.imgur.com/3/image', {
+    return await request
+      .post('https://api.imgur.com/3/image', {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Client-ID ' + imgurClientID
+          Authorization: `Client-ID ${imgurClientID}`,
         },
         json: {
           type: 'base64',
-          image: await fs.readFile(imagePath, { encoding: 'base64' })
-        }
-      }).then((body) => {
+          image: await fs.readFile(imagePath, { encoding: 'base64' }),
+        },
+      })
+      .then(body => {
         return body.data.link;
-      }).catch((error) => {
+      })
+      .catch(error => {
         logError('Error sending data to imgur...');
         logError(error);
       });
   },
 
   middleware(app) {
-    app.use(bodyParser.urlencoded({
-      limit: '50mb',
-      extended: true,
-      parameterLimit: 50000
-    }));
-    app.use(bodyParser.json({
-      limit: '50mb'
-    }));
+    app.use(
+      bodyParser.urlencoded({
+        limit: '50mb',
+        extended: true,
+        parameterLimit: 50000,
+      }),
+    );
+    app.use(
+      bodyParser.json({
+        limit: '50mb',
+      }),
+    );
 
     app.post('/visual-test/make-screenshot', (req, res) => {
-      let url = req.body.url;
+      let { url } = req.body;
       let fileName = this._getFileName(req.body.name);
-      let selector = req.body.selector;
+      let { selector } = req.body;
       let fullPage = req.body.fullPage || false;
       let delayMs = req.body.delayMs ? parseInt(req.body.delayMs) : 100;
 
@@ -284,26 +299,33 @@ module.exports = {
       }
 
       let data = {};
-      this._makeScreenshots(url, fileName, { selector, fullPage, delayMs }).then(({ newBaseline, newScreenshotUrl }) => {
-        data.newScreenshotUrl = newScreenshotUrl;
-        data.newBaseline = newBaseline;
+      this._makeScreenshots(url, fileName, { selector, fullPage, delayMs })
+        .then(({ newBaseline, newScreenshotUrl }) => {
+          data.newScreenshotUrl = newScreenshotUrl;
+          data.newBaseline = newBaseline;
 
-        return this._compareImages(fileName);
-      }).then(() => {
-        data.status = 'SUCCESS';
-        res.send(data);
-      }).catch((reason) => {
-        let diffPath = reason ? reason.diffPath : null;
-        let tmpPath = reason ? reason.tmpPath : null;
-        let errorPixelCount = reason ? reason.errorPixelCount : null;
+          return this._compareImages(fileName);
+        })
+        .then(() => {
+          data.status = 'SUCCESS';
+          res.send(data);
+        })
+        .catch(reason => {
+          let diffPath = reason ? reason.diffPath : null;
+          let tmpPath = reason ? reason.tmpPath : null;
+          let errorPixelCount = reason ? reason.errorPixelCount : null;
 
-        data.status = 'ERROR';
-        data.diffPath = diffPath;
-        data.fullDiffPath = path.join(__dirname, diffPath);
-        data.error = `${errorPixelCount} pixels differ - diff: ${diffPath}, img: ${tmpPath}`;
+          data.status = 'ERROR';
+          data.diffPath = diffPath;
+          data.fullDiffPath = diffPath ? path.join(__dirname, diffPath) : null;
 
-        res.send(data);
-      });
+          if (reason.diffPath === null) {
+            data.error = `Image sizes do not match ${errorPixelCount} pixels differ - img: ${tmpPath}`;
+          } else {
+            data.error = `${errorPixelCount} pixels differ - diff: ${diffPath}, img: ${tmpPath}`;
+          }
+          res.send(data);
+        });
     });
   },
 
@@ -341,7 +363,7 @@ module.exports = {
     let options = this.visualTest;
 
     if (options.groupByOs) {
-      let os = options.os;
+      let { os } = options;
 
       const filePath = path.parse(fileName);
 
@@ -355,7 +377,7 @@ module.exports = {
 
   isDevelopingAddon() {
     return false;
-  }
+  },
 };
 
 function log() {
