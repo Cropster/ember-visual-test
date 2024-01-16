@@ -13,6 +13,8 @@ const bodyParser = require('body-parser');
 const { PNG } = require('pngjs');
 /* eslint-enable node/no-extraneous-require */
 
+const IMAGE_SIZE_ERROR = 'Image sizes do not match.';
+
 module.exports = {
   name: require('./package').name,
 
@@ -206,30 +208,40 @@ module.exports = {
         }
 
         const diff = new PNG({ width: baseImg.width, height: baseImg.height });
-        const errorPixelCount = pixelmatch(baseImg.data, tmpImg.data, diff.data, baseImg.width, baseImg.height, {
-          threshold: options.imageMatchThreshold,
-          includeAA: options.includeAA
-        });
+        try {
+          const errorPixelCount = pixelmatch(baseImg.data, tmpImg.data, diff.data, baseImg.width, baseImg.height, {
+              threshold: options.imageMatchThreshold,
+              includeAA: options.includeAA
+            });
 
-        if (errorPixelCount <= options.imageMatchAllowedFailures) {
-          return resolve();
-        }
+            if (errorPixelCount <= options.imageMatchAllowedFailures) {
+              return resolve();
+            }
 
-        let diffPath = path.join(options.imageDiffDirectory, fileName);
+            let diffPath = path.join(options.imageDiffDirectory, fileName);
 
-        await fs.outputFile(diffPath, PNG.sync.write(diff));
+            await fs.outputFile(diffPath, PNG.sync.write(diff));
 
-        Promise.all([
-          _this._tryUploadToImgur(imgPath),
-          _this._tryUploadToImgur(diffPath)
-        ]).then(([urlTmp, urlDiff]) => {
+            Promise.all([
+              _this._tryUploadToImgur(imgPath),
+              _this._tryUploadToImgur(diffPath)
+            ]).then(([urlTmp, urlDiff]) => {
+              reject({
+                errorPixelCount,
+                allowedErrorPixelCount: options.imageMatchAllowedFailures,
+                diffPath: urlDiff || diffPath,
+                tmpPath: urlTmp || imgPath
+              });
+            }).catch(reject);
+        } catch (e) {
+          if(e.message !== IMAGE_SIZE_ERROR) console.error(e)
           reject({
-            errorPixelCount,
+            errorPixelCount: Math.abs((baseImg.data.length - tmpImg.data.length) / 4),
             allowedErrorPixelCount: options.imageMatchAllowedFailures,
-            diffPath: urlDiff || diffPath,
-            tmpPath: urlTmp || imgPath
+            diffPath: null,
+            tmpPath: imgPath
           });
-        }).catch(reject);
+        }
       }
     });
   },
@@ -299,9 +311,13 @@ module.exports = {
 
         data.status = 'ERROR';
         data.diffPath = diffPath;
-        data.fullDiffPath = path.join(__dirname, diffPath);
-        data.error = `${errorPixelCount} pixels differ - diff: ${diffPath}, img: ${tmpPath}`;
-
+        data.fullDiffPath = diffPath? path.join(__dirname, diffPath) : null;
+        
+        if(reason.diffPath === null){
+          data.error = `Image sizes do not match ${errorPixelCount} pixels differ - img: ${tmpPath}`;
+        } else {
+          data.error = `${errorPixelCount} pixels differ - diff: ${diffPath}, img: ${tmpPath}`;
+        }
         res.send(data);
       });
     });
