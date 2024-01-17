@@ -234,7 +234,7 @@ module.exports = {
               });
             }).catch(reject);
         } catch (e) {
-          if(e.message !== IMAGE_SIZE_ERROR) {
+          if(e.message === IMAGE_SIZE_ERROR) {
             reject({
               errorPixelCount: Math.abs((baseImg.data.length - tmpImg.data.length) / 4),
               allowedErrorPixelCount: options.imageMatchAllowedFailures,
