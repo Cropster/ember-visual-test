@@ -234,13 +234,17 @@ module.exports = {
               });
             }).catch(reject);
         } catch (e) {
-          if(e.message !== IMAGE_SIZE_ERROR) console.error(e)
-          reject({
-            errorPixelCount: Math.abs((baseImg.data.length - tmpImg.data.length) / 4),
-            allowedErrorPixelCount: options.imageMatchAllowedFailures,
-            diffPath: null,
-            tmpPath: imgPath
-          });
+          if(e.message !== IMAGE_SIZE_ERROR) {
+            reject({
+              errorPixelCount: Math.abs((baseImg.data.length - tmpImg.data.length) / 4),
+              allowedErrorPixelCount: options.imageMatchAllowedFailures,
+              diffPath: null,
+              tmpPath: imgPath
+            });
+          } else {
+            console.error(e);
+            reject(e);
+          }
         }
       }
     });
